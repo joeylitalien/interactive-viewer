@@ -88,3 +88,7 @@ Note that the scene file _needs_ to have the following line in order to use diff
 ```
 
 If the render name already exists, the script overwrites its false color images and corresponding metrics. If not, it inserts it into the `data.js` dictionary. It is also possible to add an image that was rendered elsewhere, but the dictionary needs to be updated manually to reflect the changes.
+
+## TODO
+- [ ] Track convergence over time
+- [ ] Make scripts more robust by handling exceptions
