@@ -15,9 +15,9 @@ const data =
                     "image": "PSSMLT.png"
                 },
                 {
-                    "title": "MMLT",
+                    "title": "DRMLT",
                     "version": "-",
-                    "image": "MMLT.png"
+                    "image": "DRMLT.png"
                 }
             ]
         },
@@ -30,9 +30,24 @@ const data =
                     "image": "PSSMLT-MAPE.png"
                 },
                 {
-                    "title": "MMLT",
+                    "title": "DRMLT",
                     "version": "-",
-                    "image": "MMLT-MAPE.png"
+                    "image": "DRMLT-MAPE.png"
+                }
+            ]
+        },
+        {
+            "title": "SMAPE",
+            "elements": [
+                {
+                    "title": "PSSMLT",
+                    "version": "-",
+                    "image": "PSSMLT-SMAPE.png"
+                },
+                {
+                    "title": "DRMLT",
+                    "version": "-",
+                    "image": "DRMLT-SMAPE.png"
                 }
             ]
         },
@@ -45,9 +60,9 @@ const data =
                     "image": "PSSMLT-MRSE.png"
                 },
                 {
-                    "title": "MMLT",
+                    "title": "DRMLT",
                     "version": "-",
-                    "image": "MMLT-MRSE.png"
+                    "image": "DRMLT-MRSE.png"
                 }
             ]
         }
@@ -57,22 +72,30 @@ const data =
             "title": "Stats",
             "labels": [
                 "PSSMLT",
-                "PSSMLT"
+                "DRMLT"
             ],
             "series": [
                 {
                     "label": "MAPE",
                     "data": [
-                        "0.3020",
-                        "0.3020"
+                        "0.1164",
+                        "0.1516"
+                    ],
+                    "track": []
+                },
+                {
+                    "label": "SMAPE",
+                    "data": [
+                        "0.1302",
+                        "0.1681"
                     ],
                     "track": []
                 },
                 {
                     "label": "MRSE",
                     "data": [
-                        "0.1326",
-                        "0.1326"
+                        "0.0122",
+                        "0.0173"
                     ],
                     "track": []
                 }

@@ -57,7 +57,7 @@ const data =
             "title": "Stats",
             "labels": [
                 "PSSMLT",
-                "PSSMLT"
+                "MMLT"
             ],
             "series": [
                 {
@@ -66,7 +66,7 @@ const data =
                         "0.3020",
                         "0.3020"
                     ],
-                    "track": []
+                    "track": [[10,9,8,7,6,5], [11,9,8,7,6,5]]
                 },
                 {
                     "label": "MRSE",
@@ -74,7 +74,7 @@ const data =
                         "0.1326",
                         "0.1326"
                     ],
-                    "track": []
+                    "track": [[10,19,18,17,16,15], [10,19,18,17,16,15]]
                 }
             ]
         }
