@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Neural Importance Sampling: Rendering Results">
+    <meta name="description" content="Rendering Results">
     <title>Country Kitchen</title>
 
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,600' rel='stylesheet' type='text/css'>
@@ -31,7 +31,7 @@
         var local = true;
 
         content = document.getElementById("content");
-        var box = document.getElementById('image-box');
+        var box = document.getElementById('title-box');
 
         var help = document.createElement('div');
         var helpText = "Use mouse wheel to zoom in/out, click and drag to pan. Press keys [1], [2], ... to switch between individual images.";
@@ -56,14 +56,14 @@
         }
         
         // new ChartBox(content, data["stats"]);
-        new TableBox(content, "Metrics", data["stats"]);
-        new PlotBox(content, data["stats"]);
+        new TableBox(content, "Statistics", data["stats"]);
+        new PlotBox(content, "Convergence Plots", data["stats"]);
     }
 </script>
 
 <body onload="setup();">
     <div class="content scene-content" id="content">
-        <div class="image-box" id="image-box">
+        <div id="title-box">
             <p><a href="../../index.html"><i class="fas fa-arrow-left"></i> Back to index</a></p>
             <h1 class="title">Country Kitchen</h1>
         </div>

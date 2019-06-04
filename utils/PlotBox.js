@@ -25,7 +25,7 @@ var plotBoxSettings = {
     width: 1152
 };
 
-var PlotBox = function(parent, stats) {
+var PlotBox = function(parent, title, stats) {
     
     // Selection tabs
     var selectorGroup = document.createElement("div");
@@ -49,7 +49,7 @@ var PlotBox = function(parent, stats) {
     // Header
     var h1 = document.createElement("h1");
     h1.className = "title";
-    h1.appendChild(document.createTextNode("Convergence"));
+    h1.appendChild(document.createTextNode(title));
 
     // Plot canvas
     var box = document.createElement("div");
