@@ -27,7 +27,7 @@ To add a new scene, simply run:
 
 ```python3 tools/create_scene.py --name "Jewelry" --root ./```
 
-This creates a new scene directory with an `index.html` template, ready to be populated with data. Here, `root` represents the top directory.
+This creates a new scene directory with an `index.html` template, ready to be populated with data. Here, `root` represents the top directory. Using this script is not necessary as it is possible to copy and paste a scene and change its name manually.
 
 ## Initializing a scene
 
@@ -36,8 +36,10 @@ To add a render, you first need to specify a reference and a base algorithm (e.g
 ```bash
 python3 tools/analyze.py --ref Reference.exr \
                          --tests Path-Tracing.exr \
+                         --names "Path Tracing" \
                          --dir scenes/jewelry/ \
                          --metrics mape mrse \
+                         --partials pt_partial \
                          --epsilon 1e-2 \
                          --clip 0 1
 ```
@@ -50,15 +52,16 @@ The above computes the mean absolute percentage error ([MAPE](https://en.wikiped
 | `tests` | Test image(s) | Required |
 | `dir` | Scene viewer directory | Required |
 | `metrics` | Metric(s) to compute | Required (Options: `l1, l2, mape, smape, mrse`) |
+| `partials` | Directory of partial renders (for convergence plots) | Optional |
+| `names` | Test image(s) names | Optional (Default: `tests` without extensions) |
 | `epsilon` | Epsilon when computing metric (avoids divison by zero) | Optional (Default: `1e-2`) |
 | `clip` | Pixel range for false color images | Optional (Default: `[0,1]`) |
 
-By default, the algorithm name is the test file name, with `-` replaced with spaces. For instance, `Path-Tracing.exr` gets parsed as "Path Tracing": this is what it is referred to in the interactive viewer.
-
+By default, the algorithm name is the test file name, with `-` replaced with spaces. For instance, `Path-Tracing.exr` gets parsed as "Path Tracing": this is what it is referred to in the interactive viewer. If necessary, use `--names` to specify a more detailed name.
 
 Behind the curtains, this script creates false color images and saves them as LDR  (PNG) images in the scene directory. A thumbnail is also generated for the index. Most importantly, a `data.js` file is written to disk, which is then used by JS to display all images and metrics in the browser. This file can only be created by `tools/analyze.py`, which is why it has to be ran first before adding new renders.
 
-## Rendering a new image
+## Rendering a new image with Mitsuba
 The script `tools/render.py` is used to render a new image with [Mitsuba](http://www.mitsuba-renderer.org/) and add it to an existing scene viewer. It provides a way to iterate over a particular algorithm and immediately see how it compares against other previously computed images.
 
 ```bash
@@ -88,7 +91,7 @@ python3 tools/render.py --mitsuba ./mitsuba \
 | `epsilon` | Epsilon when computing metric (avoids divison by zero) | Optional (Default: `1e-2`) |
 | `clip` | Pixel range for false color images | Optional (Default: `[0,1]`) |
 
-Note that the scene file _needs_ to have the following line in order to use different integrators. This is to ensure that the same geometry and light configuration is being rendered across algorithms.
+Note that the scene file is assumed to have the following line in order to use different integrators. This is to ensure that the same geometry and light configuration is being rendered across algorithms.
 
 ```xml
 <integrator type="$integrator"> 
@@ -105,11 +108,12 @@ It is possible to manually add a rendered image to the scene viewer. The easiest
 
 ```bash
 python3 tools/analyze.py --ref Reference.exr \
-                         --tests Render-1.exr Render-2.exr Render-3.exr \
+                         --tests pt.exr bdpt.exr pssmlt.exr \
+                         --names "Path Tracing" "Bidirectional PT" "PSSMLT" \
                          --dir scenes/jewelry/ \
                          --metrics mape mrse \
 ```
-Note that by doing so, you will overwrite previously added scenes.
+Note that by doing so, you will overwrite previously added scenes rendered with Mitsuba.
 
 # 📊 Standalone Metrics
 
@@ -187,8 +191,9 @@ python3 tools/metric.py --ref Reference.exr \
 
 
 # 🗒 TODOs
-- [ ] Track convergence over time
+- [x] Track convergence over time
 - [ ] Make scripts more robust by handling exceptions
+- [ ] Handle different length plots and make sure stats are truthful
 
 # 👏🏻 Acknowledgments
 * [JERI](https://jeri.io/)'s team at Disney Research for providing the interactive viewing tool.

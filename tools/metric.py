@@ -25,12 +25,13 @@ def compute_metric(ref, test, metric, eps=1e-2):
         error = np.abs(diff)
     elif (metric == 'l2'):    # Squared error
         error = diff * diff
-    elif (metric == 'mrse'):   # Relative squared error
+    elif (metric == 'mrse'):  # Relative squared error
         error = diff * diff / (ref * ref + eps)
     elif (metric == 'mape'):  # Relative absolute error
         error = np.abs(diff) / (ref + eps)
     elif (metric == 'smape'): # Symmetric absolute error
-        error = 2 * np.abs(diff)/ (ref + test + eps)
+        error[ref + test != 0] = 2 * np.abs(diff)/ (ref + test)
+        error[ref + test == 0] = 0
     else:
         raise ValueError('Invalid metric')
 

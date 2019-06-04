@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 import json
+import csv
 from metric import compute_metric, falsecolor
 
 
@@ -56,6 +57,59 @@ def hdr_to_ldr(path_dir, img):
     ldr.save(ldr_path)
     ldr_entry = {'title': img['name'], 'version': '-', 'image': ldr_fname}
     return ldr_entry
+
+
+def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
+    """Track error convergence over partial renders."""
+
+    num_order = lambda x: int(x.split('_')[1].split('.')[0])
+
+    # All partial directories (one per algorithm)
+    all_stats = []
+    for partial_dir in test_dirs:
+        all_dir_files = os.listdir(partial_dir)
+        partial_files = [f for f in os.listdir(partial_dir) if f.endswith('.exr')]
+        partial_files = sorted(partial_files, key=num_order)
+
+        # All partial images within a directory
+        dir_stat = []
+        for partial_f in partial_files:
+            test_path = os.path.join(partial_dir, partial_f)
+            test_fp = pyexr.open(test_path)
+            test = np.array(test_fp.get())
+
+            # Compute all metrics on (ref, test) pair
+            metric_dict = {}
+            for metric in metrics:
+                err_img = compute_metric(ref, test, metric.lower(), eps)
+                err_mean = '{:.4f}'.format(np.mean(err_img))
+                metric_dict[metric] = err_mean
+            dir_stat.append(metric_dict)
+
+        all_stats.append(dir_stat)
+
+    # Not sure if there's a better way to do this, maybe using itertools.chain?
+    all_metrics = {}
+    for metric in metrics:
+        all_metrics[metric] = []
+    for p, partial_dir in enumerate(test_dirs):
+        for metric in metrics:
+            seq = [float(stat[metric]) for stat in all_stats[p]]
+            all_metrics[metric].append(seq)
+
+    # Insert into dictionary (the ugliness of this is an artefact of using JSON...)
+    for t, test_dir in enumerate(test_dirs):
+        time_file = '{}_time.csv'.format(test_dir.split('_')[0])
+        #[f for f in os.listdir(test_dir) if f.endswith('.cs
+        with open(os.path.join(test_dir, time_file)) as fp:
+            timesteps = [item for sublist in list(csv.reader(fp)) for item in sublist]
+        timesteps = list(map(float, list(filter(None, timesteps))))
+
+        for metric in metrics:
+            for entry in data['stats'][0]['series']:
+                if entry['label'] == metric.upper():
+                    entry['track']['x'].append(timesteps)
+                    entry['track']['y'].append(all_metrics[metric][t])
 
 
 def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
@@ -138,7 +192,7 @@ def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
     # Write dictionary
     for metric in metrics:
         fc_entry = {'title': metric.upper(), 'elements': []}
-        metric_entry = {'label': metric.upper(), 'data': [], 'track': []}
+        metric_entry = {'label': metric.upper(), 'data': [], 'track': {'x': [], 'y': []}}
 
         for t, test in enumerate(tests):
             # Add false color filenames to dict
@@ -162,12 +216,14 @@ if __name__ == '__main__':
     # Parse arguments
     parser = argparse.ArgumentParser(description='Batch analysis of rendered images.')
    
-    parser.add_argument('-r',   '--ref', help='reference image filename', type=str, required=True)
-    parser.add_argument('-t',   '--test', help='test images filename', nargs='+', type=str, required=True)
-    parser.add_argument('-m',   '--metrics', help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape'], type=str)
-    parser.add_argument('-eps', '--epsilon', help='epsilon value', type=float, default=1e-2)
-    parser.add_argument('-c',   '--clip', help='clipping values for min/max', nargs=2, type=float, default=[0,1])
-    parser.add_argument('-d',   '--dir', help='corresponding viewer scene directory', type=str, required=True)
+    parser.add_argument('-r',   '--ref',      help='reference image filename', type=str, required=True)
+    parser.add_argument('-t',   '--tests',    help='test images filename', nargs='+', type=str, required=True)
+    parser.add_argument('-n',   '--names',    help='algorithms names', nargs='+', type=str)
+    parser.add_argument('-m',   '--metrics',  help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape'], type=str, required=True)
+    parser.add_argument('-p',   '--partials', help='partial renders to track convergence', nargs='+', type=str)
+    parser.add_argument('-eps', '--epsilon',  help='epsilon value', type=float, default=1e-2)
+    parser.add_argument('-c',   '--clip',     help='clipping values for min/max', nargs=2, type=float, default=[0,1])
+    parser.add_argument('-d',   '--dir',      help='corresponding viewer scene directory', type=str, required=True)
 
     args = parser.parse_args()
 
@@ -175,15 +231,20 @@ if __name__ == '__main__':
     ref_fp = pyexr.open(args.ref)
     ref = np.array(ref_fp.get())
     tests = []
-    for t in args.test:
+    for i, t in enumerate(args.tests):
         test_fp = pyexr.open(t)
         img = np.array(test_fp.get())
-        test_name = os.path.splitext(t)[0].replace('-',' ')
+        if args.names:
+            test_name = args.names[i]
+        else:
+            test_name = os.path.splitext(t)[0].replace('-',' ')
         tests.append({'name': test_name, 'data': img})
     
     # Compute stats
     sys.stdout.write('Computing stats... ')
     sys.stdout.flush()
     data = compute_stats(args.dir, ref, tests, args.metrics, args.clip, args.epsilon)
+    if (args.partials):
+        track_convergence(data, ref, args.partials, args.metrics, args.epsilon)
     write_data(args.dir, data)
     print('done.')

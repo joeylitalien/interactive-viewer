@@ -69,10 +69,10 @@ var PlotBox = function(parent, title, stats) {
     this.plots = [];
     for (var i = 0; i < stats[0]["series"].length; i++) {
         var traces = []
-        for (var j = 0; j < stats[0]["series"][i]["track"].length; ++j) {
+        for (var j = 0; j < stats[0]["series"][i]["track"]['y'].length; ++j) {
             var trace = {
-                x: [10, 20, 30, 40, 50],
-                y: stats[0]["series"][i]["track"][j],
+                x: stats[0]["series"][i]["track"]['x'][j],
+                y: stats[0]["series"][i]["track"]['y'][j],
                 type: "scatter",
                 name: stats[0]["labels"][j]
             };

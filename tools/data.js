@@ -10,14 +10,9 @@ const data =
                     "image": "Reference.png"
                 },
                 {
-                    "title": "PSSMLT",
+                    "title": "pssmlt_partial/pssmlt_7",
                     "version": "-",
-                    "image": "PSSMLT.png"
-                },
-                {
-                    "title": "DRMLT",
-                    "version": "-",
-                    "image": "DRMLT.png"
+                    "image": "pssmlt_partial/pssmlt_7.png"
                 }
             ]
         },
@@ -25,29 +20,9 @@ const data =
             "title": "MAPE",
             "elements": [
                 {
-                    "title": "PSSMLT",
+                    "title": "pssmlt_partial/pssmlt_7",
                     "version": "-",
-                    "image": "PSSMLT-MAPE.png"
-                },
-                {
-                    "title": "DRMLT",
-                    "version": "-",
-                    "image": "DRMLT-MAPE.png"
-                }
-            ]
-        },
-        {
-            "title": "SMAPE",
-            "elements": [
-                {
-                    "title": "PSSMLT",
-                    "version": "-",
-                    "image": "PSSMLT-SMAPE.png"
-                },
-                {
-                    "title": "DRMLT",
-                    "version": "-",
-                    "image": "DRMLT-SMAPE.png"
+                    "image": "pssmlt_partial/pssmlt_7-MAPE.png"
                 }
             ]
         },
@@ -55,14 +30,9 @@ const data =
             "title": "MRSE",
             "elements": [
                 {
-                    "title": "PSSMLT",
+                    "title": "pssmlt_partial/pssmlt_7",
                     "version": "-",
-                    "image": "PSSMLT-MRSE.png"
-                },
-                {
-                    "title": "DRMLT",
-                    "version": "-",
-                    "image": "DRMLT-MRSE.png"
+                    "image": "pssmlt_partial/pssmlt_7-MRSE.png"
                 }
             ]
         }
@@ -71,33 +41,42 @@ const data =
         {
             "title": "Stats",
             "labels": [
-                "PSSMLT",
-                "DRMLT"
+                "pssmlt_partial/pssmlt_7"
             ],
             "series": [
                 {
                     "label": "MAPE",
                     "data": [
-                        "0.1164",
-                        "0.1516"
+                        "0.1176"
                     ],
-                    "track": []
-                },
-                {
-                    "label": "SMAPE",
-                    "data": [
-                        "0.1302",
-                        "0.1681"
-                    ],
-                    "track": []
+                    "track": [
+                        [
+                            "0.4088",
+                            "0.2256",
+                            "0.1715",
+                            "0.1513",
+                            "0.1403",
+                            "0.1280",
+                            "0.1176"
+                        ]
+                    ]
                 },
                 {
                     "label": "MRSE",
                     "data": [
-                        "0.0122",
-                        "0.0173"
+                        "0.0129"
                     ],
-                    "track": []
+                    "track": [
+                        [
+                            "0.1927",
+                            "0.0454",
+                            "0.0264",
+                            "0.0204",
+                            "0.0179",
+                            "0.0151",
+                            "0.0129"
+                        ]
+                    ]
                 }
             ]
         }
