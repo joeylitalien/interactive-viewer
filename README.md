@@ -192,4 +192,4 @@ python3 tools/metric.py --ref Reference.exr \
 
 # 👏🏻 Acknowledgments
 * [JERI](https://jeri.io/)'s team at Disney Research for providing the interactive viewing tool.
-* [Jan Novák](http://drz.disneyresearch.com/~jnovak/) who wrote the Chart/Table JS files.
+* [Jan Novák](http://drz.disneyresearch.com/~jnovak/) and [Benedikt Bitterli](https://benedikt-bitterli.me/) who wrote the Chart/Table JS files.

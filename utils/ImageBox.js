@@ -319,8 +319,8 @@ ImageBox.prototype.buildTreeNode = function(config, level, nodeList, parent) {
             inset.style.backgroundImage = "url('" + config[i].image + "')";
             inset.style.backgroundRepeat = "no-repeat";
             inset.style.border = "0px solid black";
-            inset.style.width  = (imageBoxSettings.width / config.length-4) + "px";
-            inset.style.height = (imageBoxSettings.width / config.length-4) + "px";
+            inset.style.width  = Math.min(256, imageBoxSettings.width / config.length-4) + "px";
+            inset.style.height = Math.min(256, imageBoxSettings.width / config.length-4) + "px";
             if (config[i].version != '-') {
                 inset.name = config[i].title + '_' + config[i].version;
             } else {
@@ -357,7 +357,10 @@ ImageBox.prototype.buildTreeNode = function(config, level, nodeList, parent) {
             var auxDiv = document.createElement('td');
             auxDiv.className = "insets";
             auxDiv.style.width = (imageBoxSettings.width / insets.length) + "px";
-            auxDiv.appendChild(document.createTextNode(insets[i].name));
+            insetTitle = document.createElement('div');
+            insetTitle.append(document.createTextNode(insets[i].name));
+            auxDiv.appendChild(insetTitle);
+            // auxDiv.appendChild(document.createTextNode(insets[i].name));
             auxDiv.appendChild(insets[i]);
             tr.appendChild(auxDiv);
         }
