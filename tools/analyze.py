@@ -178,7 +178,7 @@ if __name__ == '__main__':
     for t in args.test:
         test_fp = pyexr.open(t)
         img = np.array(test_fp.get())
-        test_name = os.path.splitext(t)[0]
+        test_name = os.path.splitext(t)[0].replace('-',' ')
         tests.append({'name': test_name, 'data': img})
     
     # Compute stats
