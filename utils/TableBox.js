@@ -69,13 +69,13 @@ var TableBox = function(parent, title, stats) {
             td.appendChild(document.createTextNode(stats[i]['series'][j]['label']))
             tr.appendChild(td);
 
-            var err = stats[i]['series'][j]['data'].map(Number);
+            var err = stats[i]['series'][j]['data'].map(parseFloat);
             var bestIdx = err.indexOf(Math.min.apply(null, err.map(Number)));
 
             for (var k = 0; k < stats[i]['series'][j]['data'].length; ++k) {
                 var td = document.createElement("td");
                 td.className = "stats";
-                var valueStr = stats[i]['series'][j]['data'][k].toString();
+                var valueStr = err[k].toExponential().toString();
                 if (k == bestIdx) {
                     td.className += " best-stat"
                 }

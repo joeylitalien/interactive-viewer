@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import json
 import csv
+import math
 from metric import compute_metric, falsecolor
 
 
@@ -43,6 +44,7 @@ def write_data(path_dir, data):
     
     with open(os.path.join(path_dir, 'data.json'), 'w') as fp:
         json.dump(data, fp, indent=4)
+    
     data_js = 'const data =\n' + json.dumps(data, indent=4)
     with open(os.path.join(path_dir, 'data.js'), 'w') as fp:
         fp.write(data_js)
@@ -59,10 +61,42 @@ def hdr_to_ldr(path_dir, img):
     return ldr_entry
 
 
+def parse_stats(test_dirs, test_names):
+    """Parse Mitsuba statistics file.
+    Ugly but it does the job; could use regex.
+    TODO: Incorporate this into data dictionary.
+    """
+
+    stat_dicts = {}
+    for t, test_dir in enumerate(test_dirs):
+        stat_file = '{}_stats.txt'.format(test_dir.split('_')[0])
+        with open(os.path.join(test_dir, stat_file), 'r') as fp:
+            stat_txt = fp.read()
+
+        stat_dict = {}
+        stats = stat_txt.split('*')[2:]
+        stats = [s.replace('\n', '').split(' - ') for s in stats]
+        for i, stat in enumerate(stats):
+            stats[i] = [s.strip().replace('--','') for s in stat]
+        stats[0][0] = 'Algorithm'
+        for stat in stats:
+            entry = {}
+            for s in stat[1:]:
+                l = s.split(' : ')
+                entry[l[0]] = l[1]
+            stat_dict[stat[0].replace(' :','')] = entry
+        
+        stat_dicts[test_names[t]] = stat_dict['Algorithm']
+
+    return stat_dicts
+        
+
+
 def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     """Track error convergence over partial renders."""
 
     num_order = lambda x: int(x.split('_')[1].split('.')[0])
+    round_10 = lambda x: int(math.ceil(x / 10.0)) * 10
 
     # All partial directories (one per algorithm)
     all_stats = []
@@ -82,7 +116,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
             metric_dict = {}
             for metric in metrics:
                 err_img = compute_metric(ref, test, metric.lower(), eps)
-                err_mean = '{:.4f}'.format(np.mean(err_img))
+                err_mean = '{:.6f}'.format(np.mean(err_img))
                 metric_dict[metric] = err_mean
             dir_stat.append(metric_dict)
 
@@ -100,10 +134,12 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     # Insert into dictionary (the ugliness of this is an artefact of using JSON...)
     for t, test_dir in enumerate(test_dirs):
         time_file = '{}_time.csv'.format(test_dir.split('_')[0])
-        #[f for f in os.listdir(test_dir) if f.endswith('.cs
         with open(os.path.join(test_dir, time_file)) as fp:
             timesteps = [item for sublist in list(csv.reader(fp)) for item in sublist]
+
+        # Round to nearest ten, assuming frequency % 10 = 0
         timesteps = list(map(float, list(filter(None, timesteps))))
+        timesteps = list(map(round_10, timesteps))
 
         for metric in metrics:
             for entry in data['stats'][0]['series']:
@@ -113,9 +149,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
 
 
 def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
-    """Update some entries of data.js.
-       Assumes it was already created.
-    """
+    """Update some entries of data.js; assumes it was already created."""
 
     find_idx = lambda t, d: list(d['stats'][0]['labels']).index(t['name'])
 
@@ -135,7 +169,7 @@ def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
         for m, metric in enumerate(metrics):
             # Recompute error
             err_img = compute_metric(ref, test['data'], metric.lower(), eps)
-            err_mean = '{:.4f}'.format(np.mean(err_img))
+            err_mean = '{:.6f}'.format(np.mean(err_img))
             if is_new:
                 data['stats'][0]['series'][m]['data'].append(err_mean)
             else:
@@ -179,7 +213,7 @@ def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
         for metric in metrics:
             # Compute error
             err_img = compute_metric(ref, test['data'], metric, eps)
-            err_mean = '{:.4f}'.format(np.mean(err_img))
+            err_mean = '{:.6f}'.format(np.mean(err_img))
 
             # Compute false color heatmap and save to files
             fc = falsecolor(err_img, clip, eps)
@@ -229,15 +263,17 @@ if __name__ == '__main__':
 
     # Load images
     ref_fp = pyexr.open(args.ref)
-    ref = np.array(ref_fp.get())
-    tests = []
+    ref = np.array(ref_fp.get(), dtype=np.float64)
+    tests, test_names = [], []
     for i, t in enumerate(args.tests):
         test_fp = pyexr.open(t)
-        img = np.array(test_fp.get())
+        img = np.array(test_fp.get(), dtype=np.float64)
         if args.names:
             test_name = args.names[i]
         else:
             test_name = os.path.splitext(t)[0].replace('-',' ')
+        test_name = test_name.encode('utf8').decode('unicode_escape') # For e.g. handling greek symbols
+        test_names.append(test_name)
         tests.append({'name': test_name, 'data': img})
     
     # Compute stats
@@ -248,3 +284,5 @@ if __name__ == '__main__':
         track_convergence(data, ref, args.partials, args.metrics, args.epsilon)
     write_data(args.dir, data)
     print('done.')
+
+    # parse_stats(args.partials, test_names)

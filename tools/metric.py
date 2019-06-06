@@ -30,8 +30,7 @@ def compute_metric(ref, test, metric, eps=1e-2):
     elif (metric == 'mape'):  # Relative absolute error
         error = np.abs(diff) / (ref + eps)
     elif (metric == 'smape'): # Symmetric absolute error
-        error[ref + test != 0] = 2 * np.abs(diff)/ (ref + test)
-        error[ref + test == 0] = 0
+        error = 2 * np.abs(diff)/ (ref + test + eps)
     else:
         raise ValueError('Invalid metric')
 

@@ -85,7 +85,7 @@ var PlotBox = function(parent, title, stats) {
     var options = {
         xaxis: { title: "Times (s)", titlefont: {size: 14, color: "#aaa"}, type: "log", autorange: true },
         yaxis: { title: "Metric",  titlefont: {size: 14, color: "#aaa"}, type: "log", autorange: true },
-        margin: { l: 64, r: 64, b: 64, t: 64, pad: 12 },
+        margin: { l: 100, r: 100, b: 64, t: 64, pad: 12 },
         font: { family: 'Roboto', size: 14, color: '#555' },
         width: plotBoxSettings["width"] - 2
     };
