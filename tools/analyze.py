@@ -69,7 +69,7 @@ def parse_stats(test_dirs, test_names):
 
     stat_dicts = {}
     for t, test_dir in enumerate(test_dirs):
-        stat_file = '{}_stats.txt'.format(test_dir.split('_')[0])
+        stat_file = '{}_stats.txt'.format('_'.join(test_dir.split('_')[:-1]))
         with open(os.path.join(test_dir, stat_file), 'r') as fp:
             stat_txt = fp.read()
 
@@ -95,7 +95,7 @@ def parse_stats(test_dirs, test_names):
 def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     """Track error convergence over partial renders."""
 
-    num_order = lambda x: int(x.split('_')[1].split('.')[0])
+    num_order = lambda x: int(x.split('_')[-1].split('.')[0])
     round_10 = lambda x: int(round(x / 10.0)) * 10
 
     # All partial directories (one per algorithm)
@@ -133,7 +133,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
 
     # Insert into dictionary (the ugliness of this is an artefact of using JSON...)
     for t, test_dir in enumerate(test_dirs):
-        time_file = '{}_time.csv'.format(test_dir.split('_')[0])
+        time_file = '{}_time.csv'.format('_'.join(test_dir.split('_')[:-1]))
         with open(os.path.join(test_dir, time_file)) as fp:
             timesteps = [item for sublist in list(csv.reader(fp)) for item in sublist]
 
