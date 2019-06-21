@@ -98,8 +98,8 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     """Track error convergence over partial renders."""
 
     num_order = lambda x: int(x.split('_')[-1].split('.')[0])
-    round_10 = lambda x: int(round(x / 10.0)) * 10
-
+    round_10 = lambda x: int(round(x))
+    
     # All partial directories (one per algorithm)
     all_stats = []
     for partial_dir in test_dirs:
