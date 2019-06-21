@@ -101,7 +101,6 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     # All partial directories (one per algorithm)
     all_stats = []
     for partial_dir in test_dirs:
-        all_dir_files = os.listdir(partial_dir)
         partial_files = [f for f in os.listdir(partial_dir) if f.endswith('.exr')]
         partial_files = sorted(partial_files, key=num_order)
 
@@ -177,7 +176,7 @@ def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
 
             # Recompute false color heatmap and save to files
             fc = falsecolor(err_img, clip, eps)
-            fc_fname = '{}-{}.png'.format(test['name'], metric.upper());
+            fc_fname = '{}-{}.png'.format(test['name'], metric.upper())
             plt.imsave(os.path.join(path_dir, fc_fname), fc)
 
             if is_new:
@@ -217,7 +216,7 @@ def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
 
             # Compute false color heatmap and save to files
             fc = falsecolor(err_img, clip, eps)
-            fc_fname = '{}-{}.png'.format(test['name'], metric.upper());
+            fc_fname = '{}-{}.png'.format(test['name'], metric.upper())
             plt.imsave(os.path.join(path_dir, fc_fname), fc)
 
             # Save stats, if necessary
