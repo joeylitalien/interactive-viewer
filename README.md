@@ -204,8 +204,8 @@ python3 tools/metric.py --ref Reference.exr \
 
 # 🗒 TODOs
 - [x] Track convergence over time
-- [ ] Make scripts more robust by handling exceptions
-- [ ] Handle different length plots and make sure stats are truthful
+- [x] Make scripts more robust by handling exceptions
+- [x] Handle different length plots and make sure stats are truthful
 
 # 👏🏻 Acknowledgments
 * [JERI](https://jeri.io/)'s team at Disney Research for providing the interactive viewing tool.
