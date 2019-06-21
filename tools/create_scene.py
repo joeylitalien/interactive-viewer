@@ -70,4 +70,3 @@ if __name__ == '__main__':
 
     # Create dummy file for new scene
     create_dummy(args.root, args.name)
-

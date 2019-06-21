@@ -6,10 +6,12 @@ using different metrics. To be used in conjuction
 with Jeri in-browser visualization tool.
 """
 
+import glob
 import os, sys
 import argparse
 import pyexr
 import numpy as np
+import cv2
 import matplotlib.pyplot as plt
 from PIL import Image
 import json
@@ -101,15 +103,15 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     # All partial directories (one per algorithm)
     all_stats = []
     for partial_dir in test_dirs:
-        partial_files = [f for f in os.listdir(partial_dir) if f.endswith('.exr')]
+        ext = '.exr' if name.endswith('.exr') else '.hdr'
+        partial_files = [f for f in os.listdir(partial_dir) if f.endswith(ext)]
         partial_files = sorted(partial_files, key=num_order)
 
         # All partial images within a directory
         dir_stat = []
         for partial_f in partial_files:
             test_path = os.path.join(partial_dir, partial_f)
-            test_fp = pyexr.open(test_path)
-            test = np.array(test_fp.get())
+            test = load_hdr_img(test_path)
 
             # Compute all metrics on (ref, test) pair
             metric_dict = {}
@@ -237,12 +239,28 @@ def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
             err_mean = stats[t][test['name']][metric.upper()]['val']
             metric_entry['data'].append(err_mean)
 
-        # Update dictionary with false colro filenames and metrics
+        # Update dictionary with false color filenames and metrics
         data['imageBoxes'].append(fc_entry)
         data['stats'][0]['series'].append(metric_entry)
 
     generate_thumbnail(path_dir, ref)
     return data
+
+
+def load_hdr_img(filepath):
+    """Load HDR image (either .hdr or .exr)."""
+
+    if filepath.endswith('.exr'):
+        fp = pyexr.open(filepath)
+        img = np.array(fp.get(), dtype=np.float64)
+    elif filepath.endswith('.hdr'):
+        fp = cv2.imread(filepath, cv2.IMREAD_ANYDEPTH)
+        fp = cv2.cvtColor(fp, cv2.COLOR_BGR2RGB)
+        img = np.array(fp, dtype=np.float64)
+    else:
+        raise Exception('Only HDR and OpenEXR images are supported')
+
+    return img
 
 
 if __name__ == '__main__':
@@ -257,77 +275,69 @@ if __name__ == '__main__':
     parser.add_argument('-eps', '--epsilon',   help='epsilon value', type=float, default=1e-2)
     parser.add_argument('-c',   '--clip',      help='clipping values for min/max', nargs=2, type=float, default=[0,1])
     parser.add_argument('-d',   '--dir',       help='corresponding viewer scene directory', type=str, required=True)
-    parser.add_argument('-A',   '--automatic', help='directory where to apply automatic arguement filling based on partials directories', type=str)
+    parser.add_argument('-A',   '--automatic', help='scene directory for automatic mode', type=str)
 
     args = parser.parse_args()
 
-    # If the automatic mode is enable
-    # we will check if there is conflicts with the arguments
-    # note that the automatic mode is to save time during experiemnts
-    # proper command arguments needed to be generated 
+    # In automatic mode, check if conflicts with other arguments
+    # Automatic mode can be used to save time during experiments
+    # Proper command arguments needed to be generated 
     tests = args.tests
     names = args.names
     reference = args.ref
     partials = args.partials
-    if(args.automatic):
-        # The arguments needs to be empty: 
-        #  - tests
-        #  - names
-        #  - partial
-        #  - reference (use Reference.exr by default)
-        if(tests != None):
-            raise Exception('Tests (--tests) cannot be used with automatic mode (-A)')
-        if(names != None):
+    if (args.automatic):
+        # Arguments needs to be empty for automatic mode
+        if (tests != None):
+            raise Exception('Tests (--tests) cannot be used with automatic mode (-Aa)')
+        if (names != None):
             raise Exception('Names (--names) cannot be used with automatic mode (-A)')
-        if(partials != None):
+        if (partials != None):
             raise Exception('Partials (--partials) cannot be used with automatic mode (-A)')
-        if(reference != None):
-            raise Exception('Reference cannot be provided with automatic mode (-A) [by default assuming "Reference.exr" exists inside the scene directory]')
+        if (reference != None):
+            raise Exception('Reference cannot be provided with automatic mode (-A); default assumes "Reference.exr" in scene directory')
         
         # Check the reference
-        reference = args.automatic + os.path.sep + "Reference.exr"
-        if(not os.path.exists(reference)):
-            raise Exception('Impossible to found the reference image: {}'.format(reference))
+        reference = os.path.join(args.automatic, 'Reference.exr')
+        if (not os.path.exists(reference)):
+            raise Exception('Could not load reference image: {}'.format(reference))
 
-        # We will use a glob to extract all the techniques names
-        tests = []
-        names = []
-        partials = []
-        import glob
-        for t in glob.glob(args.automatic + os.path.sep + '*_partial'):
+        # Extract all the techniques names
+        tests, names, partials = [], [], []
+        for t in glob.glob(os.path.join(args.automatic, '*_partial')):
             name = t.split(os.path.sep)[-1].replace('_partial', '')
             names += [name]
             partials += [t]
 
-            # For the representative image, we will take 
-            # the last file updated
-            glob_expression = t + os.path.sep + name + '_[0-9]*.exr'
-            img = glob.glob(glob_expression)
-            if(len(img) == 0):
-                raise Exception('Impossible to found files that match {}'.format(glob_expression))
+            # Representative image is last updated file
+            ext = 'exr' if name.endswith('.exr') else 'hdr'
+            glob_expr = os.path.join(t, '{}_[0-9]*.{}'.format(name, ext))
+            img = glob.glob(glob_expr)
+            if (len(img) == 0):
+                raise Exception('Could not find files matching {}'.format(glob_expr))
             img = max(img, key=os.path.getctime)
 
-            print('Use {} to represent {}'.format(img, name))
+            print('Using {} to represent {}'.format(img, name))
             tests += [img]
     else:
-        # Checking if we have tests
-        if(tests != None):
-            raise Exception('Tests (--tests) is required when not using the automatic mode')
-        if(reference != None):
-            raise Exception('Need to provide a Reference (using --ref)')
+        # Check if everything needed is provided
+        if (tests == None):
+            raise Exception('Tests (--tests) is required when not in automatic mode')
+        if (reference == None):
+            raise Exception('Need to provide a reference (using --ref)')
         
     # Load images
-    ref_fp = pyexr.open(reference)
-    ref = np.array(ref_fp.get(), dtype=np.float64)
+    ref = load_hdr_img(reference)
     test_configs, test_names = [], []
     for i, t in enumerate(tests):
-        test_fp = pyexr.open(t)
-        img = np.array(test_fp.get(), dtype=np.float64)
+        img = load_hdr_img(t)
         if names:
             test_name = names[i]
         else:
             test_name = os.path.splitext(t)[0].replace('-',' ')
-        test_name = test_name.encode('utf8').decode('unicode_escape') # For e.g. handling greek symbols
+        
+        # For e.g. handling greek symbols
+        test_name = test_name.encode('utf8').decode('unicode_escape')
         test_names.append(test_name)
         test_configs.append({'name': test_name, 'data': img})
     
@@ -339,5 +349,3 @@ if __name__ == '__main__':
         track_convergence(data, ref, partials, args.metrics, args.epsilon)
     write_data(args.dir, data)
     print('done.')
-
-    # parse_stats(args.partials, test_names)

@@ -7,6 +7,7 @@ _A web comparison tool for rendering research, forked from the [online test suit
 ### Python
 
 * [PyEXR](https://github.com/tvogels/pyexr) (0.3.6)
+* [OpenCV](https://opencv.org/) (4.1.0)
 * [NumPy](http://www.numpy.org/) (1.14.2)
 * [Matplotlib](https://matplotlib.org/) (2.2.3)
 * [Pillow](https://pillow.readthedocs.io/en/latest/index.html) (5.2.0)
@@ -44,7 +45,7 @@ python3 tools/analyze.py --ref Reference.exr \
                          --clip 0 1
 ```
 
-The above computes the mean absolute percentage error ([MAPE](https://en.wikipedia.org/wiki/Mean_absolute_percentage_error)) and the mean relative square error (MRSE) between the reference and the test image. Below is a table of all arguments; run with `--help` for more info.
+The above computes the mean absolute percentage error ([MAPE](https://en.wikipedia.org/wiki/Mean_absolute_percentage_error)) and the mean relative square error (MRSE) between the reference and the test image. Both OpenEXR and HDR formats are supported. Below is a table of all arguments; run with `--help` for more info.
 
 | Parameter | Description | Requirement |
 |:----------|:------------|:--|
@@ -56,6 +57,7 @@ The above computes the mean absolute percentage error ([MAPE](https://en.wikiped
 | `names` | Test image(s) names | Optional (Default: `tests` without extensions) |
 | `epsilon` | Epsilon when computing metric (avoids divison by zero) | Optional (Default: `1e-2`) |
 | `clip` | Pixel range for false color images | Optional (Default: `[0,1]`) |
+| `automatic` | Scene directory for automatic detection of files | Optional |
 
 By default, the algorithm name is the test file name, with `-` replaced with spaces. For instance, `Path-Tracing.exr` gets parsed as "Path Tracing": this is what it is referred to in the interactive viewer. If necessary, use `--names` to specify a more detailed name.
 
@@ -113,7 +115,7 @@ python3 tools/analyze.py --ref Reference.exr \
                          --dir scenes/jewelry/ \
                          --metrics mape mrse \
 ```
-Note that by doing so, you will overwrite previously added scenes rendered with Mitsuba.
+Note that by doing so, you will overwrite previously added scenes rendered with Mitsuba. Run with the `--automatic` flag to let the script automatically detect partial render directories and reference.
 
 # 📊 Standalone Metrics
 
