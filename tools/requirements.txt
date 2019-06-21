@@ -1,4 +1,5 @@
 pyexr
+opencv-python
 numpy
 matplotlib
 Pillow

@@ -8,6 +8,7 @@ with Jeri in-browser visualization tool.
 
 import re
 import os
+import shutil
 import argparse
 from bs4 import BeautifulSoup as Soup
 
@@ -21,8 +22,7 @@ def add_to_index(root_dir, scene_name):
     new_scene = soup.new_tag('div', **{'class': 'report-preview'})
     path_dir = os.path.join('scenes', scene_name.lower())
     scene_link = soup.new_tag('a', href=os.path.join(path_dir, 'index.html'))
-    thumb = soup.new_tag('img', src=os.path.join(
-        path_dir, 'thumb.png'), **{'class': 'report-thumb'})
+    thumb = soup.new_tag('img', src=os.path.join(path_dir, 'thumb.png'), **{'class': 'report-thumb'})
 
     scene_link.append(thumb)
     new_scene.append(scene_link)
@@ -35,7 +35,7 @@ def add_to_index(root_dir, scene_name):
 
 
 def list_index(root_dir):
-    """Lis all the scenes inside the index"""
+    """List all the scenes in index."""
 
     index = os.path.join(root_dir, 'index.html')
     soup = Soup(open(index).read(), 'html.parser')
@@ -46,11 +46,12 @@ def list_index(root_dir):
 
 
 def remove_from_index(root_dir, scene_name):
-    """Return true if it have deleted the targeted scene from the index"""
+    """Return true if targeted scene was deleted from index."""
 
     index = os.path.join(root_dir, 'index.html')
     soup = Soup(open(index).read(), 'html.parser')
-    scenes = soup.findAll('div', {"class": 'element-container'})[0]
+    scenes = soup.findAll('div', {'class': 'element-container'})[0]
+    
     # Find the html node
     scene_node = None
     for s in soup.find_all('div', **{'class': 'report-preview'}):
@@ -58,8 +59,8 @@ def remove_from_index(root_dir, scene_name):
         if name == scene_name:
             scene_node = s
 
-    if(scene_node == None):
-        print("Unable to found the scene {} from the index")
+    if scene_node == None:
+        print('Unable to find scene {} in index'.format(scene_name)
         return False
     else:
         scenes.contents.remove(scene_node)
@@ -88,19 +89,19 @@ def create_dummy(root_dir, scene_name):
 
 
 def remove_dummy(root_dir, scene_name):
+    """Remove dummy scene from index."""
+
     scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower())
     if not os.path.exists(scene_dir):
-        print("WARN: the scene dir {} did not exist".format(scene_dir))
+        print("Warning: scene directory {} does not exist".format(scene_dir))
     else:
-        import shutil
         shutil.rmtree(scene_dir)
 
 
 if __name__ == '__main__':
     # Parse arguments
     parser = argparse.ArgumentParser(description='New scene creator.')
-    parser.add_argument('-r', '--root', help='viewer root',
-                        type=str, default='../')
+    parser.add_argument('-r', '--root', help='viewer root', type=str, default='../')
     subparsers = parser.add_subparsers(dest="action", required=True)
     # Create new scene
     parser_add = subparsers.add_parser('add')
@@ -121,18 +122,19 @@ if __name__ == '__main__':
         return r.sub(r'\1' * indent_width, orig_prettify(self, encoding, formatter))
     Soup.prettify = prettify
 
-    if(args.action == 'add'):
+    if args.action == 'add':
         # Update directory index
         add_to_index(args.root, args.name)
         # Create dummy file for new scene
         create_dummy(args.root, args.name)
-    elif(args.action == 'remove'):
-        # Update html index
+              
+    elif args.action == 'remove':
+        # Update HTML index
         found = remove_from_index(args.root, args.name)
-        # Remove the dummy file
-        if(found):
-            remove_dummy(args.root, args.name)
-    elif(args.action == 'list'):
+        # Remove dummy file
+        if found: remove_dummy(args.root, args.name)
+              
+    elif args.action == 'list':
         list_index(args.root)
     else:
         raise Exception('Unknown action: {}'.format(args.action))
