@@ -26,16 +26,16 @@ To install the latest version of all packages, run:
 
 To add a new scene, simply run:
 
-```python3 tools/create_scene.py --root ./ add --name "Jewelry"```
+```python3 tools/scene.py --root ./ add --name "Jewelry"```
 
 This creates a new scene directory with an `index.html` template, ready to be populated with data. Here, `root` represents the top directory. To remove a scene, run
 
-```python3 tools/create_scene.py --root ./ remove --name "Jewelry"```
+```python3 tools/scene.py --root ./ remove --name "Jewelry"```
 
 To see all scenes in the HTML index, run
 
 
-```python3 tools/create_scene.py --root ./ list```
+```python3 tools/scene.py --root ./ list```
 
 
 Using this script is not necessary as it is possible to copy and paste a scene and change its name manually.
