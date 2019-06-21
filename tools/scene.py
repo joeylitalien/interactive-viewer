@@ -39,10 +39,10 @@ def list_index(root_dir):
 
     index = os.path.join(root_dir, 'index.html')
     soup = Soup(open(index).read(), 'html.parser')
-    print('scenes: ')
+    print('All scenes: ')
     for s in soup.find_all('div', **{'class': 'report-preview'}):
         name = s.find('a').attrs['href'].split(os.path.sep)[1]
-        print(' - {}'.format(name))
+        print(' * {}'.format(name))
 
 
 def remove_from_index(root_dir, scene_name):
@@ -60,7 +60,7 @@ def remove_from_index(root_dir, scene_name):
             scene_node = s
 
     if scene_node == None:
-        print('Unable to find scene {} in index'.format(scene_name)
+        print('Unable to find scene {} in index'.format(scene_name))
         return False
     else:
         scenes.contents.remove(scene_node)
@@ -100,9 +100,9 @@ def remove_dummy(root_dir, scene_name):
 
 if __name__ == '__main__':
     # Parse arguments
-    parser = argparse.ArgumentParser(description='New scene creator.')
+    parser = argparse.ArgumentParser(description='HTML Scene Manager')
     parser.add_argument('-r', '--root', help='viewer root', type=str, default='../')
-    subparsers = parser.add_subparsers(dest="action", required=True)
+    subparsers = parser.add_subparsers(dest='action')
     # Create new scene
     parser_add = subparsers.add_parser('add')
     parser_add.add_argument('-n', '--name', help='scene name', type=str)
@@ -122,19 +122,18 @@ if __name__ == '__main__':
         return r.sub(r'\1' * indent_width, orig_prettify(self, encoding, formatter))
     Soup.prettify = prettify
 
+     # Update directory index and create dummy file for new scene
     if args.action == 'add':
-        # Update directory index
         add_to_index(args.root, args.name)
-        # Create dummy file for new scene
         create_dummy(args.root, args.name)
-              
+
+    # Update HTML index and remove dummy file
     elif args.action == 'remove':
-        # Update HTML index
         found = remove_from_index(args.root, args.name)
-        # Remove dummy file
         if found: remove_dummy(args.root, args.name)
               
     elif args.action == 'list':
         list_index(args.root)
+
     else:
         raise Exception('Unknown action: {}'.format(args.action))
