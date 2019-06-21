@@ -132,7 +132,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
 
     # Insert into dictionary (the ugliness of this is an artefact of using JSON...)
     for t, test_dir in enumerate(test_dirs):
-        time_file = '{}_time.csv'.format('_'.join(test_dir.split('_')[:-1]))
+        time_file = os.path.basename('{}_time.csv'.format('_'.join(test_dir.split('_')[:-1])))
         with open(os.path.join(test_dir, time_file)) as fp:
             timesteps = [item for sublist in list(csv.reader(fp)) for item in sublist]
 
@@ -249,38 +249,94 @@ if __name__ == '__main__':
     # Parse arguments
     parser = argparse.ArgumentParser(description='Batch analysis of rendered images.')
    
-    parser.add_argument('-r',   '--ref',      help='reference image filename', type=str, required=True)
-    parser.add_argument('-t',   '--tests',    help='test images filename', nargs='+', type=str, required=True)
-    parser.add_argument('-n',   '--names',    help='algorithms names', nargs='+', type=str)
-    parser.add_argument('-m',   '--metrics',  help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape'], type=str, required=True)
-    parser.add_argument('-p',   '--partials', help='partial renders to track convergence', nargs='+', type=str)
-    parser.add_argument('-eps', '--epsilon',  help='epsilon value', type=float, default=1e-2)
-    parser.add_argument('-c',   '--clip',     help='clipping values for min/max', nargs=2, type=float, default=[0,1])
-    parser.add_argument('-d',   '--dir',      help='corresponding viewer scene directory', type=str, required=True)
+    parser.add_argument('-r',   '--ref',       help='reference image filename', type=str)
+    parser.add_argument('-t',   '--tests',     help='test images filename', nargs='+', type=str)
+    parser.add_argument('-n',   '--names',     help='algorithms names', nargs='+', type=str)
+    parser.add_argument('-m',   '--metrics',   help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape'], type=str, required=True)
+    parser.add_argument('-p',   '--partials',  help='partial renders to track convergence', nargs='+', type=str)
+    parser.add_argument('-eps', '--epsilon',   help='epsilon value', type=float, default=1e-2)
+    parser.add_argument('-c',   '--clip',      help='clipping values for min/max', nargs=2, type=float, default=[0,1])
+    parser.add_argument('-d',   '--dir',       help='corresponding viewer scene directory', type=str, required=True)
+    parser.add_argument('-A',   '--automatic', help='directory where to apply automatic arguement filling based on partials directories', type=str)
 
     args = parser.parse_args()
 
+    # If the automatic mode is enable
+    # we will check if there is conflicts with the arguments
+    # note that the automatic mode is to save time during experiemnts
+    # proper command arguments needed to be generated 
+    tests = args.tests
+    names = args.names
+    reference = args.ref
+    partials = args.partials
+    if(args.automatic):
+        # The arguments needs to be empty: 
+        #  - tests
+        #  - names
+        #  - partial
+        #  - reference (use Reference.exr by default)
+        if(tests != None):
+            raise Exception('Tests (--tests) cannot be used with automatic mode (-A)')
+        if(names != None):
+            raise Exception('Names (--names) cannot be used with automatic mode (-A)')
+        if(partials != None):
+            raise Exception('Partials (--partials) cannot be used with automatic mode (-A)')
+        if(reference != None):
+            raise Exception('Reference cannot be provided with automatic mode (-A) [by default assuming "Reference.exr" exists inside the scene directory]')
+        
+        # Check the reference
+        reference = args.automatic + os.path.sep + "Reference.exr"
+        if(not os.path.exists(reference)):
+            raise Exception('Impossible to found the reference image: {}'.format(reference))
+
+        # We will use a glob to extract all the techniques names
+        tests = []
+        names = []
+        partials = []
+        import glob
+        for t in glob.glob(args.automatic + os.path.sep + '*_partial'):
+            name = t.split(os.path.sep)[-1].replace('_partial', '')
+            names += [name]
+            partials += [t]
+
+            # For the representative image, we will take 
+            # the last file updated
+            glob_expression = t + os.path.sep + name + '_[0-9]*.exr'
+            img = glob.glob(glob_expression)
+            if(len(img) == 0):
+                raise Exception('Impossible to found files that match {}'.format(glob_expression))
+            img = max(img, key=os.path.getctime)
+
+            print('Use {} to represent {}'.format(img, name))
+            tests += [img]
+    else:
+        # Checking if we have tests
+        if(tests != None):
+            raise Exception('Tests (--tests) is required when not using the automatic mode')
+        if(reference != None):
+            raise Exception('Need to provide a Reference (using --ref)')
+        
     # Load images
-    ref_fp = pyexr.open(args.ref)
+    ref_fp = pyexr.open(reference)
     ref = np.array(ref_fp.get(), dtype=np.float64)
-    tests, test_names = [], []
-    for i, t in enumerate(args.tests):
+    test_configs, test_names = [], []
+    for i, t in enumerate(tests):
         test_fp = pyexr.open(t)
         img = np.array(test_fp.get(), dtype=np.float64)
-        if args.names:
-            test_name = args.names[i]
+        if names:
+            test_name = names[i]
         else:
             test_name = os.path.splitext(t)[0].replace('-',' ')
         test_name = test_name.encode('utf8').decode('unicode_escape') # For e.g. handling greek symbols
         test_names.append(test_name)
-        tests.append({'name': test_name, 'data': img})
+        test_configs.append({'name': test_name, 'data': img})
     
     # Compute stats
     sys.stdout.write('Computing stats... ')
     sys.stdout.flush()
-    data = compute_stats(args.dir, ref, tests, args.metrics, args.clip, args.epsilon)
-    if (args.partials):
-        track_convergence(data, ref, args.partials, args.metrics, args.epsilon)
+    data = compute_stats(args.dir, ref, test_configs, args.metrics, args.clip, args.epsilon)
+    if (partials):
+        track_convergence(data, ref, partials, args.metrics, args.epsilon)
     write_data(args.dir, data)
     print('done.')
 
