@@ -108,14 +108,14 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
         ext = detect_extension(os.path.join(partial_dir, '{}_1'.format(name)))
         
         # List all partial files
-        partial_files = [f for f in os.listdir(partial_dir) if f.endswith(ext)]
+        glob_expr = os.path.join(partial_dir, '{}_[0-9]*.{}'.format(name, ext))
+        partial_files = glob.glob(glob_expr)
         partial_files = sorted(partial_files, key=num_order)
 
         # All partial images within a directory
         dir_stat = []
         for partial_f in partial_files:
-            test_path = os.path.join(partial_dir, partial_f)
-            test = load_hdr_img(test_path)
+            test = load_hdr_img(partial_f)
 
             # Compute all metrics on (ref, test) pair
             metric_dict = {}
