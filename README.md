@@ -190,9 +190,9 @@ python3 tools/metric.py --ref Reference.exr \
 
 <table align="center">
   <tr align="center">
-    <td colspan=3><img src="tools/Reference.png" alt="Reference"></td>
-    <td colspan=3><img src="tools/MAPE.png" alt="MAPE"/></td>
-    <td colspan=3><img src="tools/MAPE-CB.png" alt="MAPE + Colorbar"/></td>
+    <td colspan=3><img src="images/Reference.png" alt="Reference"></td>
+    <td colspan=3><img src="images/MAPE.png" alt="MAPE"/></td>
+    <td colspan=3><img src="images/MAPE-CB.png" alt="MAPE + Colorbar"/></td>
   </tr>
   <tr align="center">
     <td colspan=3>Reference</td>
