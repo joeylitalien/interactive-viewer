@@ -90,8 +90,7 @@ def parse_stats(test_dirs, test_names):
         
         stat_dicts[test_names[t]] = stat_dict['Algorithm']
 
-    return stat_dicts
-        
+    return stat_dicts  
 
 
 def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
@@ -103,15 +102,19 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     # All partial directories (one per algorithm)
     all_stats = []
     for partial_dir in test_dirs:
-        ext = '.exr' if name.endswith('.exr') else '.hdr'
-        partial_files = [f for f in os.listdir(partial_dir) if f.endswith(ext)]
+        # Determine extension by checking first partial file
+        name = partial_dir.split(os.path.sep)[-1].replace('_partial', '')
+        ext = detect_extension(os.path.join(partial_dir, '{}_1'.format(name)))
+        
+        # List all partial files
+        glob_expr = os.path.join(partial_dir, '{}_[0-9]*.{}'.format(name, ext))
+        partial_files = glob.glob(glob_expr)
         partial_files = sorted(partial_files, key=num_order)
 
         # All partial images within a directory
         dir_stat = []
         for partial_f in partial_files:
-            test_path = os.path.join(partial_dir, partial_f)
-            test = load_hdr_img(test_path)
+            test = load_hdr_img(partial_f)
 
             # Compute all metrics on (ref, test) pair
             metric_dict = {}
@@ -247,6 +250,16 @@ def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
     return data
 
 
+def detect_extension(filepath):
+    """Check if file (with supported extension) exists and return its extension."""
+    if os.path.exists(filepath + '.exr'):
+        return 'exr'
+    elif os.path.exists(filepath + '.hdr'):
+        return 'hdr'
+    else:
+        raise Exception("Unsupported file extension for: {}".format(filepath))
+
+
 def load_hdr_img(filepath):
     """Load HDR image (either .hdr or .exr)."""
 
@@ -309,8 +322,10 @@ if __name__ == '__main__':
             names += [name]
             partials += [t]
 
+            # Determine extension by checking first partial file
+            ext = detect_extension(os.path.join(t, '{}_1'.format(name)))
+
             # Representative image is last updated file
-            ext = 'exr' if name.endswith('.exr') else 'hdr'
             glob_expr = os.path.join(t, '{}_[0-9]*.{}'.format(name, ext))
             img = glob.glob(glob_expr)
             if (len(img) == 0):
@@ -325,6 +340,19 @@ if __name__ == '__main__':
             raise Exception('Tests (--tests) is required when not in automatic mode')
         if (reference == None):
             raise Exception('Need to provide a reference (using --ref)')
+    
+    # Clean partial path by removing os.path.sep
+    for i in range(len(partials)):
+        partials[i] = partials[i][:-len(os.path.sep)] if partials[i].endswith(os.path.sep) else partials[i]
+    
+    # Print informations
+    print('Arguments info')
+    print(' - Tests: ')
+    for t in tests:
+        print('  * {}'.format(t))
+    print(' - Partials: ')
+    for t in partials:
+        print('  * {}'.format(t))
         
     # Load images
     ref = load_hdr_img(reference)
