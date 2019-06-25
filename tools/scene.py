@@ -75,7 +75,7 @@ def create_dummy(root_dir, scene_name):
 
     scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower())
     if not os.path.exists(scene_dir):
-        os.mkdir(scene_dir)
+        os.makedirs(scene_dir)
 
     example_index = os.path.join(root_dir, 'tools', 'example.html')
     soup = Soup(open(example_index).read(), 'html.parser')
@@ -93,7 +93,7 @@ def remove_dummy(root_dir, scene_name):
 
     scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower())
     if not os.path.exists(scene_dir):
-        print("Warning: scene directory {} does not exist".format(scene_dir))
+        print('Warning: scene directory {} does not exist'.format(scene_dir))
     else:
         shutil.rmtree(scene_dir)
 
@@ -118,11 +118,19 @@ if __name__ == '__main__':
     orig_prettify = Soup.prettify
     r = re.compile(r'^(\s*)', re.MULTILINE)
 
-    def prettify(self, encoding=None, formatter="minimal", indent_width=4):
+    def prettify(self, encoding=None, formatter='minimal', indent_width=4):
         return r.sub(r'\1' * indent_width, orig_prettify(self, encoding, formatter))
     Soup.prettify = prettify
 
-     # Update directory index and create dummy file for new scene
+    if not os.path.exists(args.root):
+        os.makedirs(args.root)
+
+    main_index_fname = os.path.join(args.root, 'index.html')
+    if not os.path.exists(main_index_fname):
+        # Copy the dumy main index
+        shutil.copy(os.path.join(os.path.dirname(__file__), 'index.html'), main_index_fname)
+
+    # Update directory index and create dummy file for new scene
     if args.action == 'add':
         add_to_index(args.root, args.name)
         create_dummy(args.root, args.name)
