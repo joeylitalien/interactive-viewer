@@ -90,8 +90,7 @@ def parse_stats(test_dirs, test_names):
         
         stat_dicts[test_names[t]] = stat_dict['Algorithm']
 
-    return stat_dicts
-        
+    return stat_dicts  
 
 
 def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
@@ -103,7 +102,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     # All partial directories (one per algorithm)
     all_stats = []
     for partial_dir in test_dirs:
-        # For finding the extension, check the first partial file
+        # Determine extension by checking first partial file
         name = partial_dir.split(os.path.sep)[-1].replace('_partial', '')
         ext = detect_extension(os.path.join(partial_dir, '{}_1'.format(name)))
         
@@ -250,14 +249,16 @@ def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
     generate_thumbnail(path_dir, ref)
     return data
 
+
 def detect_extension(filepath):
-    """Check if a current file, with supported extension exists"""
+    """Check if file (with supported extension) exists and return its extension."""
     if os.path.exists(filepath + '.exr'):
         return 'exr'
     elif os.path.exists(filepath + '.hdr'):
         return 'hdr'
     else:
-        raise Exception("Impossible to found .exr or .hdr file extension for: {}".format(filepath))
+        raise Exception("Unsupported file extension for: {}".format(filepath))
+
 
 def load_hdr_img(filepath):
     """Load HDR image (either .hdr or .exr)."""
@@ -321,8 +322,7 @@ if __name__ == '__main__':
             names += [name]
             partials += [t]
 
-            # To detect the file extension
-            # test the first partial file
+            # Determine extension by checking first partial file
             ext = detect_extension(os.path.join(t, '{}_1'.format(name)))
 
             # Representative image is last updated file
@@ -341,7 +341,7 @@ if __name__ == '__main__':
         if (reference == None):
             raise Exception('Need to provide a reference (using --ref)')
     
-    # Clean the partial path by removing os.path.sep
+    # Clean partial path by removing os.path.sep
     for i in range(len(partials)):
         partials[i] = partials[i][:-len(os.path.sep)] if partials[i].endswith(os.path.sep) else partials[i]
     
@@ -354,7 +354,6 @@ if __name__ == '__main__':
     for t in partials:
         print('  * {}'.format(t))
         
-
     # Load images
     ref = load_hdr_img(reference)
     test_configs, test_names = [], []
