@@ -29,8 +29,8 @@ def compute_metric(ref, test, metric, eps=1e-2):
         error = diff * diff / (ref * ref + eps)
     elif (metric == 'mape'):  # Relative absolute error
         error = np.abs(diff) / (ref + eps)
-    elif (metric == 'smape'): # Symmetric absolute error
-        error = 2 * np.abs(diff)/ (ref + test + eps)
+    elif (metric == 'smape'):  # Symmetric absolute error
+        error = 2 * np.abs(diff) / (ref + test + eps)
     else:
         raise ValueError('Invalid metric')
 
@@ -45,6 +45,23 @@ def falsecolor(error, clip, eps=1e-2):
     min_val, max_val = clip
     val = np.clip((mean - min_val) / (max_val - min_val + eps), 0, 1)
     return cmap(val)
+
+
+def falsecolor_np(ref, test, eps=1e-2):
+    """Compute negative / positive relative error"""
+    diff = 2 * np.array(test - ref) / (ref + test + eps)
+    diff = np.mean(diff, axis=2)
+    diff = np.clip(diff, -1, 1)
+
+    img_r = np.zeros((diff.shape[0], diff.shape[1]))
+    img_g = np.zeros((diff.shape[0], diff.shape[1]))
+    img_r[diff > 0.0] = diff[diff > 0.0]
+    img_g[diff < 0.0] = -diff[diff < 0.0]
+
+    img = np.zeros((diff.shape[0], diff.shape[1], 3))
+    img[:, :, 0] = img_r
+    img[:, :, 1] = img_g
+    return img
 
 
 def plot(img, clip, fname):
@@ -74,16 +91,27 @@ def plot(img, clip, fname):
 
 if __name__ == '__main__':
     # Parse arguments
-    parser = argparse.ArgumentParser(description='Compute metric between two OpenEXR images.')
-    parser.add_argument('-r',   '--ref', help='reference image filename', type=str, required=True)
-    parser.add_argument('-t',   '--test', help='test image filename', type=str, required=True)
-    parser.add_argument('-m',   '--metric', help='difference metric', choices=['l1', 'l2', 'rse', 'mape', 'smape'], type=str)
-    parser.add_argument('-eps', '--epsilon', help='epsilon value', type=float, default=1e-2)
-    parser.add_argument('-c',   '--clip', help='clipping values for min/max', nargs=2, type=float, default=[0,1])
-    parser.add_argument('-fc',  '--falsecolor', help='false color heatmap output file', type=str)
-    parser.add_argument('-cb',  '--colorbar', help='display colorbar on false error heatmap', action='store_true')
-    parser.add_argument('-p',   '--plain', help='output error as plain text', action='store_true')
-    
+    parser = argparse.ArgumentParser(
+        description='Compute metric between two OpenEXR images.')
+    parser.add_argument('-r',   '--ref',
+                        help='reference image filename', type=str, required=True)
+    parser.add_argument('-t',   '--test',
+                        help='test image filename', type=str, required=True)
+    parser.add_argument('-m',   '--metric', help='difference metric',
+                        choices=['l1', 'l2', 'rse', 'mape', 'smape'], type=str)
+    parser.add_argument('-eps', '--epsilon',
+                        help='epsilon value', type=float, default=1e-2)
+    parser.add_argument('-c',   '--clip', help='clipping values for min/max',
+                        nargs=2, type=float, default=[0, 1])
+    parser.add_argument('-fc',  '--falsecolor',
+                        help='false color heatmap output file', type=str)
+    parser.add_argument('-cb',  '--colorbar',
+                        help='display colorbar on false error heatmap', action='store_true')
+    parser.add_argument('-p',   '--plain',
+                        help='output error as plain text', action='store_true')
+    parser.add_argument('-np', '--negpos', type=str,
+                        help='positive negative smape output image')
+
     args = parser.parse_args()
 
     # Check image formats
@@ -100,25 +128,37 @@ if __name__ == '__main__':
     test = np.array(test_fp.get())
 
     # Compute metric
-    err_img = compute_metric(ref, test, args.metric, args.epsilon)
-    err_mean = np.mean(err_img)
-    if args.plain:
-        print('{:.6f}'.format(err_mean))
-    else:
-        err_min, err_max, err_var = np.amin(err_img), np.amax(err_img), np.var(err_img)
-        print('{} = {:.4f} (Min = {:.4f}, Max = {:.4f}, Var = {:.4f})'.format(
-            args.metric.upper(), err_mean, err_min, err_max, err_var))
-    
-    # Compute false color heatmap
-    if (args.falsecolor):
-        if not args.falsecolor.lower().endswith('.png'):
+    if args.metric:
+        err_img = compute_metric(ref, test, args.metric, args.epsilon)
+        err_mean = np.mean(err_img)
+        if args.plain:
+            print('{:.6f}'.format(err_mean))
+        else:
+            err_min, err_max, err_var = np.amin(
+                err_img), np.amax(err_img), np.var(err_img)
+            print('{} = {:.4f} (Min = {:.4f}, Max = {:.4f}, Var = {:.4f})'.format(
+                args.metric.upper(), err_mean, err_min, err_max, err_var))
+
+        # Compute false color heatmap
+        if (args.falsecolor):
+            if not args.falsecolor.lower().endswith('.png'):
+                raise ValueError(
+                    'False color output file must be in PNG format.')
+            if args.clip != [0, 1]:
+                print('Clipping values in range: [{:.2f}, {:.2f}]'.format(
+                    args.clip[0], args.clip[1]))
+            fc = falsecolor(err_img, args.clip, args.epsilon)
+            plt.imsave(args.falsecolor, fc)
+            print('False color heatmap written to: {}'.format(args.falsecolor))
+            if args.colorbar:
+                fname = args.falsecolor.replace('.png', '.pdf')
+                plot(fc, args.clip, fname)
+                print('False color heatmap (with colorbar) written to: {}'.format(fname))
+
+    # Compute negative positie SMAPE heatmap
+    if (args.negpos):
+        if not args.negpos.lower().endswith('.png'):
             raise ValueError('False color output file must be in PNG format.')
-        if args.clip != [0,1]:
-            print('Clipping values in range: [{:.2f}, {:.2f}]'.format(args.clip[0], args.clip[1]))
-        fc = falsecolor(err_img, args.clip, args.epsilon)
-        plt.imsave(args.falsecolor, fc)
-        print('False color heatmap written to: {}'.format(args.falsecolor))
-        if args.colorbar:
-            fname = args.falsecolor.replace('.png', '.pdf')
-            plot(fc, args.clip, fname)
-            print('False color heatmap (with colorbar) written to: {}'.format(fname))
+        fc = falsecolor_np(ref, test, args.epsilon)
+        plt.imsave(args.negpos, fc)
+        print('False N/P color heatmap written to: {}'.format(args.negpos))

@@ -68,6 +68,7 @@ The above computes the mean absolute percentage error ([MAPE](https://en.wikiped
 | `epsilon` | Epsilon when computing metric (avoids divison by zero) | Optional (Default: `1e-2`) |
 | `clip` | Pixel range for false color images | Optional (Default: `[0,1]`) |
 | `automatic` | Scene directory for automatic detection of files | Optional |
+| `negpos` | Add negative/positive SMAPE colormap images | Optional | 
 
 By default, the algorithm name is the test file name, with `-` replaced with spaces. For instance, `Path-Tracing.exr` gets parsed as "Path Tracing": this is what it is referred to in the interactive viewer. If necessary, use `--names` to specify a more detailed name.
 

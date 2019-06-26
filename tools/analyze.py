@@ -17,7 +17,7 @@ from PIL import Image
 import json
 import csv
 import math
-from metric import compute_metric, falsecolor
+from metric import compute_metric, falsecolor, falsecolor_np
 
 
 def generate_thumbnail(path_dir, ref):
@@ -192,7 +192,7 @@ def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
     return data
 
 
-def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
+def compute_stats(path_dir, ref, tests, metrics, clip, negpos, eps=1e-2):
     """Generate all false color LDR maps and dictionary for JS.
        Assumes tests = {'name': 'my_alg', 'data': ...}
     """
@@ -245,6 +245,24 @@ def compute_stats(path_dir, ref, tests, metrics, clip, eps=1e-2):
         # Update dictionary with false color filenames and metrics
         data['imageBoxes'].append(fc_entry)
         data['stats'][0]['series'].append(metric_entry)
+    
+    # Write negative/positive image if requested
+    if negpos:
+        fc_entry = {'title': 'NP SMAPE', 'elements': []}
+        for t, test in enumerate(tests):
+            # Compute the N/P false color image
+            fc = falsecolor_np(ref, test['data'], eps)
+            fc_fname = '{}-NP.png'.format(test['name'])
+            plt.imsave(os.path.join(path_dir, fc_fname), fc)
+
+            # Save the fcname inside JSON
+            entry = {'title': test['name'], 'version': '-', 'image': fc_fname}
+            fc_entry['elements'].append(entry)
+        
+        # Update dictionary with false color filenames
+        data['imageBoxes'].append(fc_entry)
+        
+
 
     generate_thumbnail(path_dir, ref)
     return data
@@ -284,6 +302,7 @@ if __name__ == '__main__':
     parser.add_argument('-t',   '--tests',     help='test images filename', nargs='+', type=str)
     parser.add_argument('-n',   '--names',     help='algorithms names', nargs='+', type=str)
     parser.add_argument('-m',   '--metrics',   help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape'], type=str, required=True)
+    parser.add_argument('-np',  '--negpos',    help='shows negative/positive SMAPE', action="store_true")
     parser.add_argument('-p',   '--partials',  help='partial renders to track convergence', nargs='+', type=str)
     parser.add_argument('-eps', '--epsilon',   help='epsilon value', type=float, default=1e-2)
     parser.add_argument('-c',   '--clip',      help='clipping values for min/max', nargs=2, type=float, default=[0,1])
@@ -372,7 +391,7 @@ if __name__ == '__main__':
     # Compute stats
     sys.stdout.write('Computing stats... ')
     sys.stdout.flush()
-    data = compute_stats(args.dir, ref, test_configs, args.metrics, args.clip, args.epsilon)
+    data = compute_stats(args.dir, ref, test_configs, args.metrics, args.clip, args.negpos, args.epsilon)
     if (partials):
         track_convergence(data, ref, partials, args.metrics, args.epsilon)
     write_data(args.dir, data)
