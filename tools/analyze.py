@@ -302,7 +302,7 @@ if __name__ == '__main__':
     parser.add_argument('-t',   '--tests',     help='test images filename', nargs='+', type=str)
     parser.add_argument('-n',   '--names',     help='algorithms names', nargs='+', type=str)
     parser.add_argument('-m',   '--metrics',   help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape'], type=str, required=True)
-    parser.add_argument('-np',  '--negpos',    help='shows negative/positive SMAPE', action="store_true")
+    parser.add_argument('-np',  '--negpos',    help='shows negative/positive SMAPE', action='store_true')
     parser.add_argument('-p',   '--partials',  help='partial renders to track convergence', nargs='+', type=str)
     parser.add_argument('-eps', '--epsilon',   help='epsilon value', type=float, default=1e-2)
     parser.add_argument('-c',   '--clip',      help='clipping values for min/max', nargs=2, type=float, default=[0,1])
@@ -366,10 +366,10 @@ if __name__ == '__main__':
     
     # Print informations
     print('Arguments info')
-    print(' - Tests: ')
+    print('- Tests: ')
     for t in tests:
         print('  * {}'.format(t))
-    print(' - Partials: ')
+    print('- Partials: ')
     for t in partials:
         print('  * {}'.format(t))
         

@@ -20,7 +20,7 @@ def add_to_index(root_dir, scene_name):
     soup = Soup(open(index).read(), 'html.parser')
     scenes = soup.findAll('div', {"class": 'element-container'})[0]
     new_scene = soup.new_tag('div', **{'class': 'report-preview'})
-    path_dir = os.path.join('scenes', scene_name.lower())
+    path_dir = os.path.join('scenes', scene_name.lower().replace(' ', '-'))
     scene_link = soup.new_tag('a', href=os.path.join(path_dir, 'index.html'))
     thumb = soup.new_tag('img', src=os.path.join(path_dir, 'thumb.png'), **{'class': 'report-thumb'})
 
@@ -56,7 +56,7 @@ def remove_from_index(root_dir, scene_name):
     scene_node = None
     for s in soup.find_all('div', **{'class': 'report-preview'}):
         name = s.find('a').attrs['href'].split(os.path.sep)[1]
-        if name == scene_name:
+        if name == scene_name.lower().replace(' ', '-'):
             scene_node = s
 
     if scene_node == None:
@@ -73,7 +73,7 @@ def remove_from_index(root_dir, scene_name):
 def create_dummy(root_dir, scene_name):
     """Create dummy index file for scene."""
 
-    scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower())
+    scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower().replace(' ', '-'))
     if not os.path.exists(scene_dir):
         os.makedirs(scene_dir)
 
@@ -91,7 +91,7 @@ def create_dummy(root_dir, scene_name):
 def remove_dummy(root_dir, scene_name):
     """Remove dummy scene from index."""
 
-    scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower())
+    scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower().replace(' ', '-'))
     if not os.path.exists(scene_dir):
         print('Warning: scene directory {} does not exist'.format(scene_dir))
     else:

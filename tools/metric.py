@@ -48,19 +48,14 @@ def falsecolor(error, clip, eps=1e-2):
 
 
 def falsecolor_np(ref, test, eps=1e-2):
-    """Compute negative / positive relative error"""
+    """Compute negative / positive relative error."""
     diff = 2 * np.array(test - ref) / (ref + test + eps)
     diff = np.mean(diff, axis=2)
     diff = np.clip(diff, -1, 1)
 
-    img_r = np.zeros((diff.shape[0], diff.shape[1]))
-    img_g = np.zeros((diff.shape[0], diff.shape[1]))
-    img_r[diff > 0.0] = diff[diff > 0.0]
-    img_g[diff < 0.0] = -diff[diff < 0.0]
-
     img = np.zeros((diff.shape[0], diff.shape[1], 3))
-    img[:, :, 0] = img_r
-    img[:, :, 1] = img_g
+    img[diff > 0, 0] = diff[diff > 0]
+    img[diff < 0, 1] = -diff[diff < 0]
     return img
 
 
@@ -101,8 +96,8 @@ if __name__ == '__main__':
                         choices=['l1', 'l2', 'rse', 'mape', 'smape'], type=str)
     parser.add_argument('-eps', '--epsilon',
                         help='epsilon value', type=float, default=1e-2)
-    parser.add_argument('-c',   '--clip', help='clipping values for min/max',
-                        nargs=2, type=float, default=[0, 1])
+    parser.add_argument('-c',   '--clip', 
+                        help='clipping values for min/max', nargs=2, type=float, default=[0, 1])
     parser.add_argument('-fc',  '--falsecolor',
                         help='false color heatmap output file', type=str)
     parser.add_argument('-cb',  '--colorbar',
