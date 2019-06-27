@@ -12,6 +12,7 @@ _A web comparison tool for rendering research, forked from the [online test suit
 * [Matplotlib](https://matplotlib.org/) (2.2.3)
 * [Pillow](https://pillow.readthedocs.io/en/latest/index.html) (5.2.0)
 * [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) (4.7.1)
+* [Scikit-image](https://github.com/scikit-image/scikit-image) (0.15+)
 
 To install the latest version of all packages, run:
 
@@ -62,7 +63,7 @@ The above computes the mean absolute percentage error ([MAPE](https://en.wikiped
 | `ref` | Reference image | Required |
 | `tests` | Test image(s) | Required |
 | `dir` | Scene viewer directory | Required |
-| `metrics` | Metric(s) to compute | Required (Options: `l1, l2, mape, smape, mrse`) |
+| `metrics` | Metric(s) to compute | Required (Options: `l1, l2, mape, smape, mrse, dssim`) |
 | `partials` | Directory of partial renders (for convergence plots) | Optional |
 | `names` | Test image(s) names | Optional (Default: `tests` without extensions) |
 | `epsilon` | Epsilon when computing metric (avoids divison by zero) | Optional (Default: `1e-2`) |
@@ -97,7 +98,7 @@ python3 tools/render.py --mitsuba ./mitsuba \
 | `dir` | Scene viewer directory | Required |
 | `name` | Full name of the algorithm | Required |
 | `alg` | Mitsuba keyword for algorithm | Required |
-| `metrics` | Metric(s) to compute | Required (Options: `l1, l2, mape, smape, mrse`) |
+| `metrics` | Metric(s) to compute | Required (Options: `l1, l2, mape, smape, mrse, dssim`) |
 | `options` | Mitsuba options (e.g. `-D var=value`) | Optional
 | `timeout` | Terminate program after _N_ seconds | Optional |
 | `frequency` | Output intermediate image every _N_ seconds | Optional |
@@ -136,7 +137,7 @@ A standalone script is provided to compute various metrics without an integratio
 |:---------|:------------|:--|
 | `ref` | Reference image | Required |
 | `test` | Test image | Required |
-| `metrics` | Metric to compute | Required (Options: `l1, l2, mape, smape, mrse`) |
+| `metrics` | Metric to compute | Required (Options: `l1, l2, mape, smape, mrse, dssim`) |
 | `epsilon` | Epsilon when computing metric (avoids divison by zero) | Optional (Default: `1e-2`) |
 | `clip` | Pixel range for false color images | Optional (Default: `[0,1]`) |
 | `falsecolor` | False color heatmap output file | Optional |

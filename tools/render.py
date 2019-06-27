@@ -4,7 +4,8 @@ from __future__ import print_function
 A script to batch render and update interactive viewer.
 """
 
-import os, sys
+import os
+import sys
 import argparse
 import pyexr
 import numpy as np
@@ -15,26 +16,39 @@ from analyze import update_stats, compute_stats, write_data
 
 if __name__ == '__main__':
     # Parse arguments
-    parser = argparse.ArgumentParser(description='Batch analysis of rendered images.')
-    parser.add_argument('-mts', '--mitsuba', help='mitsuba executable', type=str, default='./mitsuba')
-    parser.add_argument('-r',   '--ref', help='reference image', type=str, required=True)
-    parser.add_argument('-s',   '--scene', help='scene xml file', type=str, required=True)
-    parser.add_argument('-o',   '--options', help='mitsuba options', type=str)
-    parser.add_argument('-d',   '--dir', help='corresponding viewer scene directory', type=str, required=True)
-    parser.add_argument('-n',   '--name', help='algorithm name', type=str, required=True)
-    parser.add_argument('-a',   '--alg', help='mitsuba algorithm keyword', type=str, required=True)
-    parser.add_argument('-t',   '--timeout', help='render time (s)', type=int)
-    parser.add_argument('-f',   '--frequency', help='intermediate image output frequency (s)', type=int)
-
-    parser.add_argument('-m',   '--metrics', help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape'], type=str)
-    parser.add_argument('-eps', '--epsilon', help='epsilon value', type=float, default=1e-2)
-    parser.add_argument('-c',   '--clip', help='clipping values for min/max', nargs=2, type=float, default=[0,1])
+    parser = argparse.ArgumentParser(
+        description='Batch analysis of rendered images.')
+    parser.add_argument('-mts', '--mitsuba',
+                        help='mitsuba executable', type=str, default='./mitsuba')
+    parser.add_argument('-r',   '--ref',
+                        help='reference image', type=str, required=True)
+    parser.add_argument('-s',   '--scene',
+                        help='scene xml file', type=str, required=True)
+    parser.add_argument('-o',   '--options',
+                        help='mitsuba options', type=str)
+    parser.add_argument('-d',   '--dir',
+                        help='corresponding viewer scene directory', type=str, required=True)
+    parser.add_argument('-n',   '--name',
+                        help='algorithm name', type=str, required=True)
+    parser.add_argument('-a',   '--alg',
+                        help='mitsuba algorithm keyword', type=str, required=True)
+    parser.add_argument('-t',   '--timeout',
+                        help='render time (s)', type=int)
+    parser.add_argument('-f',   '--frequency',
+                        help='intermediate image output frequency (s)', type=int)
+    parser.add_argument('-m',   '--metrics',
+                        help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape', 'dssim'], type=str)
+    parser.add_argument('-eps', '--epsilon',
+                        help='epsilon value', type=float, default=1e-2)
+    parser.add_argument('-c',   '--clip',
+                        help='clipping values for min/max', nargs=2, type=float, default=[0, 1])
     args = parser.parse_args()
 
     # Create Mistuba command
     fname = '{}.exr'.format(args.name.replace(' ', '-'))
     out_path = os.path.join(os.path.dirname(args.scene), fname)
-    render = '{} {} -D integrator={}'.format(args.mitsuba, args.scene, args.alg)
+    render = '{} {} -D integrator={}'.format(
+        args.mitsuba, args.scene, args.alg)
     if args.frequency:
         render = '{} -r {}'.format(render, args.frequency)
     if args.options:
@@ -64,7 +78,8 @@ if __name__ == '__main__':
     with open(os.path.join(args.dir, 'stats.json'), 'r') as fp:
         stats = json.load(fp)
 
-    data = update_stats(args.dir, data, ref, test, args.metrics, args.clip, args.epsilon)
+    data = update_stats(args.dir, data, ref, test,
+                        args.metrics, args.clip, args.epsilon)
     write_data(args.dir, data)
     print('done.')
 
