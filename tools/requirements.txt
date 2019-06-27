@@ -5,3 +5,4 @@ matplotlib
 Pillow
 bs4
 html5lib
+skimage

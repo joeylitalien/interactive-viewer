@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+from skimage.measure import compare_ssim, compare_psnr
 COLOR_MAP = 'viridis'
 
 
@@ -31,6 +31,14 @@ def compute_metric(ref, test, metric, eps=1e-2):
         error = np.abs(diff) / (ref + eps)
     elif (metric == 'smape'):  # Symmetric absolute error
         error = 2 * np.abs(diff) / (ref + test + eps)
+    elif (metric == 'dssim'):
+        # Tonemap the images before SSIM
+        ref_tonemap = np.array(pyexr.tonemap(ref) * 255, dtype=np.uint8)
+        test_tonemap = np.array(pyexr.tonemap(test) * 255, dtype=np.uint8)
+        error = 1.0 - compare_ssim(ref_tonemap,
+                                   test_tonemap,
+                                   multichannel=True,
+                                   full=True)[1]
     else:
         raise ValueError('Invalid metric')
 
@@ -93,7 +101,7 @@ if __name__ == '__main__':
     parser.add_argument('-t',   '--test',
                         help='test image filename', type=str, required=True)
     parser.add_argument('-m',   '--metric', help='difference metric',
-                        choices=['l1', 'l2', 'rse', 'mape', 'smape'], type=str)
+                        choices=['l1', 'l2', 'rse', 'mape', 'smape', 'dssim'], type=str)
     parser.add_argument('-eps', '--epsilon',
                         help='epsilon value', type=float, default=1e-2)
     parser.add_argument('-c',   '--clip', 
