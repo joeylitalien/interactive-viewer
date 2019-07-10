@@ -19,6 +19,7 @@ import csv
 import math
 from metric import compute_metric, falsecolor, falsecolor_np
 
+NP_INT_TYPES = [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
 
 def generate_thumbnail(path_dir, ref):
     """Generate thumbnail image for index."""
@@ -55,7 +56,11 @@ def write_data(path_dir, data):
 def hdr_to_ldr(path_dir, img):
     """HDR to LDR conversion for web display."""
 
-    ldr = Image.fromarray((pyexr.tonemap(img['data']) * 255).astype(np.uint8))
+    #Image already in ldr
+    if (img['data'].dtype in NP_INT_TYPES):
+        ldr = Image.fromarray(img['data'].astype(np.uint8))
+    else:
+        ldr = Image.fromarray((pyexr.tonemap(img['data']) * 255).astype(np.uint8))
     ldr_fname = '{}.png'.format(img['name'])
     ldr_path = os.path.join(path_dir, ldr_fname)
     ldr.save(ldr_path)
@@ -114,7 +119,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
         # All partial images within a directory
         dir_stat = []
         for partial_f in partial_files:
-            test = load_hdr_img(partial_f)
+            test = load_img(partial_f)
 
             # Compute all metrics on (ref, test) pair
             metric_dict = {}
@@ -274,12 +279,14 @@ def detect_extension(filepath):
         return 'exr'
     elif os.path.exists(filepath + '.hdr'):
         return 'hdr'
+    elif os.path.exists(filepath + '.png'):
+        return 'png'
     else:
         raise Exception("Unsupported file extension for: {}".format(filepath))
 
 
-def load_hdr_img(filepath):
-    """Load HDR image (either .hdr or .exr)."""
+def load_img(filepath):
+    """Load HDR or LDR image (either .hdr or .exr for HDR or .png for LDR)."""
 
     if filepath.endswith('.exr'):
         fp = pyexr.open(filepath)
@@ -288,8 +295,12 @@ def load_hdr_img(filepath):
         fp = cv2.imread(filepath, cv2.IMREAD_ANYDEPTH)
         fp = cv2.cvtColor(fp, cv2.COLOR_BGR2RGB)
         img = np.array(fp, dtype=np.float64)
+    elif filepath.endswith('.png'):
+        fp = cv2.imread(filepath)
+        fp = cv2.cvtColor(fp, cv2.COLOR_BGR2RGB)
+        img = np.array(fp, dtype=np.int32) #important to be signed, because some metrics' calculations can have intermediate negative values.
     else:
-        raise Exception('Only HDR and OpenEXR images are supported')
+        raise Exception('Only HDR and OpenEXR and PNG images are supported')
 
     return img
 
@@ -317,7 +328,7 @@ if __name__ == '__main__':
     tests = args.tests
     names = args.names
     reference = args.ref
-    partials = args.partials
+    partials = [] if args.partials is None else args.partial
     if (args.automatic):
         # Arguments needs to be empty for automatic mode
         if (tests != None):
@@ -374,10 +385,10 @@ if __name__ == '__main__':
         print('  * {}'.format(t))
         
     # Load images
-    ref = load_hdr_img(reference)
+    ref = load_img(reference)
     test_configs, test_names = [], []
     for i, t in enumerate(tests):
-        img = load_hdr_img(t)
+        img = load_img(t)
         if names:
             test_name = names[i]
         else:
