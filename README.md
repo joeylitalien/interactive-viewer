@@ -23,6 +23,20 @@ To install the latest version of all packages, run:
 * [Chart.js](https://www.chartjs.org/)
 * [Plotly.js](https://plot.ly/javascript/)
 
+## Docker
+
+An alternative method to run this tool is to build the docker image:
+
+```docker build . -t interactive-viewer```
+
+Then, run the image in interactive mode to allow running python commands:
+
+```docker run --rm -it interactive-viewer bash```
+
+In order to keep everything persistent though, you should mount the repository folder onto the container:
+
+```docker run --rm -it -v `pwd`:/interactive-viewer interactive-viewer bash```
+
 ## Managing scenes
 
 To add a new scene, simply run:
