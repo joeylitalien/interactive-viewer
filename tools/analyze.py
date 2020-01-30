@@ -333,6 +333,8 @@ if __name__ == '__main__':
                         help='partial renders to track convergence', nargs='+', type=str)
     parser.add_argument('-eps', '--epsilon',
                         help='epsilon value', type=float, default=1e-2)
+    parser.add_argument('-exp', '--exposure',
+                        help='exposure value', type=float, default=0.0)                      
     parser.add_argument('-c',   '--clip',      help='clipping values for min/max',
                         nargs=2, type=float, default=[0, 1])
     parser.add_argument(
@@ -347,8 +349,9 @@ if __name__ == '__main__':
     # Proper command arguments needed to be generated
     tests = args.tests
     names = args.names
+    exposure = math.pow(2, args.exposure)
     reference = args.ref
-    partials = [] if args.partials is None else args.partial
+    partials = [] if args.partials is None else args.partials
     if (args.automatic):
         # Arguments needs to be empty for automatic mode
         if (tests != None):
@@ -414,14 +417,14 @@ if __name__ == '__main__':
         print('  * {}'.format(t))
 
     # Load images
-    ref = load_img(reference)
+    ref = load_img(reference) * exposure
     test_configs, test_names = [], []
     for i, t in enumerate(tests):
-        img = load_img(t)
+        img = load_img(t) * exposure
         if names:
             test_name = names[i]
         else:
-            test_name = os.path.splitext(t)[0].replace('-', ' ')
+            test_name = t#os.path.splitext(t)[0].replace('-', ' ')
 
         # For e.g. handling greek symbols
         test_name = test_name.encode('utf8').decode('unicode_escape')
