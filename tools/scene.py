@@ -10,6 +10,7 @@ import re
 import os
 import shutil
 import argparse
+import pathlib
 from bs4 import BeautifulSoup as Soup
 
 
@@ -70,14 +71,14 @@ def remove_from_index(root_dir, scene_name):
         return True
 
 
-def create_dummy(root_dir, scene_name):
+def create_dummy(interactive_dir, root_dir, scene_name):
     """Create dummy index file for scene."""
 
     scene_dir = os.path.join(root_dir, 'scenes', scene_name.lower().replace(' ', '-'))
     if not os.path.exists(scene_dir):
         os.makedirs(scene_dir)
 
-    example_index = os.path.join(root_dir, 'tools', 'example.html')
+    example_index = os.path.join(interactive_dir, 'tools', 'example.html')
     soup = Soup(open(example_index).read(), 'html.parser')
 
     soup.title.string = scene_name
@@ -125,23 +126,34 @@ if __name__ == '__main__':
     if not os.path.exists(args.root):
         os.makedirs(args.root)
 
+    # Get the interactive tool path
+    interactive_dir = pathlib.Path(os.path.dirname(__file__)).parents
+    if len(interactive_dir) == 0:
+        interactive_dir = ".."
+    else:
+        interactive_dir = interactive_dir[0]
+
+    print(f'Tool directory: {interactive_dir}')
     main_index_fname = os.path.join(args.root, 'index.html')
+    print(f'Main HTML path: {main_index_fname}')
     if not os.path.exists(main_index_fname):
         # Copy the dumy main index
         shutil.copy(os.path.join(os.path.dirname(__file__), 'index.html'), main_index_fname)
 
+    # Copy utils is there missing
+    utils_path = os.path.join(args.root, 'utils')
+    if not os.path.exists(utils_path):
+        shutil.copytree(os.path.join(interactive_dir, "utils"), utils_path)
+
     # Update directory index and create dummy file for new scene
     if args.action == 'add':
         add_to_index(args.root, args.name)
-        create_dummy(args.root, args.name)
-
+        create_dummy(interactive_dir, args.root, args.name)
     # Update HTML index and remove dummy file
     elif args.action == 'remove':
         found = remove_from_index(args.root, args.name)
         if found: remove_dummy(args.root, args.name)
-              
     elif args.action == 'list':
         list_index(args.root)
-
     else:
         raise Exception('Unknown action: {}'.format(args.action))
