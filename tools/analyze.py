@@ -7,7 +7,8 @@ with Jeri in-browser visualization tool.
 """
 
 import glob
-import os, sys
+import os
+import sys
 import argparse
 import pyexr
 import numpy as np
@@ -18,6 +19,9 @@ import json
 import csv
 import math
 from metric import compute_metric, falsecolor, falsecolor_np
+
+NP_INT_TYPES = [np.int8, np.int16, np.int32, np.int64,
+                np.uint8, np.uint16, np.uint32, np.uint64]
 
 
 def generate_thumbnail(path_dir, ref):
@@ -32,7 +36,7 @@ def generate_thumbnail(path_dir, ref):
     w, h = int(w * ratio), int(h * ratio)
     thumb = img.resize((w, h), resample=Image.BICUBIC)
 
-    bg = Image.new('RGBA', (thumb_w, thumb_h), (0,0,0,255))
+    bg = Image.new('RGBA', (thumb_w, thumb_h), (0, 0, 0, 255))
     if resized_h:
         bg.paste(thumb, (int((thumb_w - w) / 2), 0))
     else:
@@ -43,10 +47,10 @@ def generate_thumbnail(path_dir, ref):
 
 def write_data(path_dir, data):
     """Update JS dictionary files."""
-    
+
     with open(os.path.join(path_dir, 'data.json'), 'w') as fp:
         json.dump(data, fp, indent=4)
-    
+
     data_js = 'const data =\n' + json.dumps(data, indent=4)
     with open(os.path.join(path_dir, 'data.js'), 'w') as fp:
         fp.write(data_js)
@@ -55,7 +59,12 @@ def write_data(path_dir, data):
 def hdr_to_ldr(path_dir, img):
     """HDR to LDR conversion for web display."""
 
-    ldr = Image.fromarray((pyexr.tonemap(img['data']) * 255).astype(np.uint8))
+    # Image already in ldr
+    if (img['data'].dtype in NP_INT_TYPES):
+        ldr = Image.fromarray(img['data'].astype(np.uint8))
+    else:
+        ldr = Image.fromarray(
+            (pyexr.tonemap(img['data']) * 255).astype(np.uint8))
     ldr_fname = '{}.png'.format(img['name'])
     ldr_path = os.path.join(path_dir, ldr_fname)
     ldr.save(ldr_path)
@@ -79,33 +88,33 @@ def parse_stats(test_dirs, test_names):
         stats = stat_txt.split('*')[2:]
         stats = [s.replace('\n', '').split(' - ') for s in stats]
         for i, stat in enumerate(stats):
-            stats[i] = [s.strip().replace('--','') for s in stat]
+            stats[i] = [s.strip().replace('--', '') for s in stat]
         stats[0][0] = 'Algorithm'
         for stat in stats:
             entry = {}
             for s in stat[1:]:
                 l = s.split(' : ')
                 entry[l[0]] = l[1]
-            stat_dict[stat[0].replace(' :','')] = entry
-        
+            stat_dict[stat[0].replace(' :', '')] = entry
+
         stat_dicts[test_names[t]] = stat_dict['Algorithm']
 
-    return stat_dicts  
+    return stat_dicts
 
 
 def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
     """Track error convergence over partial renders."""
 
-    num_order = lambda x: int(x.split('_')[-1].split('.')[0])
-    round_10 = lambda x: int(round(x))
-    
+    def num_order(x): return int(x.split('_')[-1].split('.')[0])
+    def round_10(x): return int(round(x))
+
     # All partial directories (one per algorithm)
     all_stats = []
     for partial_dir in test_dirs:
         # Determine extension by checking first partial file
         name = partial_dir.split(os.path.sep)[-1].replace('_partial', '')
         ext = detect_extension(os.path.join(partial_dir, '{}_1'.format(name)))
-        
+
         # List all partial files
         glob_expr = os.path.join(partial_dir, '{}_[0-9]*.{}'.format(name, ext))
         partial_files = glob.glob(glob_expr)
@@ -114,7 +123,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
         # All partial images within a directory
         dir_stat = []
         for partial_f in partial_files:
-            test = load_hdr_img(partial_f)
+            test = load_img(partial_f)
 
             # Compute all metrics on (ref, test) pair
             metric_dict = {}
@@ -137,9 +146,11 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
 
     # Insert into dictionary (the ugliness of this is an artefact of using JSON...)
     for t, test_dir in enumerate(test_dirs):
-        time_file = os.path.basename('{}_time.csv'.format('_'.join(test_dir.split('_')[:-1])))
+        time_file = os.path.basename('{}_time.csv'.format(
+            '_'.join(test_dir.split('_')[:-1])))
         with open(os.path.join(test_dir, time_file)) as fp:
-            timesteps = [item for sublist in list(csv.reader(fp)) for item in sublist]
+            timesteps = [item for sublist in list(
+                csv.reader(fp)) for item in sublist]
 
         # Round to nearest ten, assuming frequency % 10 = 0
         timesteps = list(map(float, list(filter(None, timesteps))))
@@ -155,7 +166,7 @@ def track_convergence(data, ref, test_dirs, metrics, eps=1e-2):
 def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
     """Update some entries of data.js; assumes it was already created."""
 
-    find_idx = lambda t, d: list(d['stats'][0]['labels']).index(t['name'])
+    def find_idx(t, d): return list(d['stats'][0]['labels']).index(t['name'])
 
     for test in tests:
         # Check if entry exists
@@ -163,7 +174,8 @@ def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
 
         # Update dictionary
         if is_new:
-            data['imageBoxes'][0]['elements'].append(hdr_to_ldr(path_dir, test))
+            data['imageBoxes'][0]['elements'].append(
+                hdr_to_ldr(path_dir, test))
             data['stats'][0]['labels'].append(test['name'])
         else:
             t = find_idx(test, data)
@@ -185,7 +197,8 @@ def update_stats(path_dir, data, ref, tests, metrics, clip, eps=1e-2):
             plt.imsave(os.path.join(path_dir, fc_fname), fc)
 
             if is_new:
-                fc_entry = {'title': test['name'], 'version': '-', 'image': fc_fname}
+                fc_entry = {'title': test['name'],
+                            'version': '-', 'image': fc_fname}
                 data['imageBoxes'][m+1]['elements'].append(fc_entry)
 
     # TODO: Update stats.json
@@ -225,12 +238,14 @@ def compute_stats(path_dir, ref, tests, metrics, clip, negpos, eps=1e-2):
             plt.imsave(os.path.join(path_dir, fc_fname), fc)
 
             # Save stats, if necessary
-            stats[t][test['name']][metric.upper()] = {'val': err_mean, 'fc': fc_fname}
+            stats[t][test['name']][metric.upper()] = {
+                'val': err_mean, 'fc': fc_fname}
 
     # Write dictionary
     for metric in metrics:
         fc_entry = {'title': metric.upper(), 'elements': []}
-        metric_entry = {'label': metric.upper(), 'data': [], 'track': {'x': [], 'y': []}}
+        metric_entry = {'label': metric.upper(), 'data': [], 'track': {
+            'x': [], 'y': []}}
 
         for t, test in enumerate(tests):
             # Add false color filenames to dict
@@ -245,7 +260,7 @@ def compute_stats(path_dir, ref, tests, metrics, clip, negpos, eps=1e-2):
         # Update dictionary with false color filenames and metrics
         data['imageBoxes'].append(fc_entry)
         data['stats'][0]['series'].append(metric_entry)
-    
+
     # Write negative/positive image if requested
     if negpos:
         fc_entry = {'title': 'NP SMAPE', 'elements': []}
@@ -258,11 +273,9 @@ def compute_stats(path_dir, ref, tests, metrics, clip, negpos, eps=1e-2):
             # Save the fcname inside JSON
             entry = {'title': test['name'], 'version': '-', 'image': fc_fname}
             fc_entry['elements'].append(entry)
-        
+
         # Update dictionary with false color filenames
         data['imageBoxes'].append(fc_entry)
-        
-
 
     generate_thumbnail(path_dir, ref)
     return data
@@ -274,12 +287,14 @@ def detect_extension(filepath):
         return 'exr'
     elif os.path.exists(filepath + '.hdr'):
         return 'hdr'
+    elif os.path.exists(filepath + '.png'):
+        return 'png'
     else:
         raise Exception("Unsupported file extension for: {}".format(filepath))
 
 
-def load_hdr_img(filepath):
-    """Load HDR image (either .hdr or .exr)."""
+def load_img(filepath):
+    """Load HDR or LDR image (either .hdr or .exr for HDR or .png for LDR)."""
 
     if filepath.endswith('.exr'):
         fp = pyexr.open(filepath)
@@ -288,54 +303,79 @@ def load_hdr_img(filepath):
         fp = cv2.imread(filepath, cv2.IMREAD_ANYDEPTH)
         fp = cv2.cvtColor(fp, cv2.COLOR_BGR2RGB)
         img = np.array(fp, dtype=np.float64)
+    elif filepath.endswith('.png'):
+        fp = cv2.imread(filepath)
+        fp = cv2.cvtColor(fp, cv2.COLOR_BGR2RGB)
+        # important to be signed, because some metrics' calculations can have intermediate negative values.
+        img = np.array(fp, dtype=np.int32)
     else:
-        raise Exception('Only HDR and OpenEXR images are supported')
+        raise Exception('Only HDR and OpenEXR and PNG images are supported')
 
     return img
 
 
 if __name__ == '__main__':
     # Parse arguments
-    parser = argparse.ArgumentParser(description='Batch analysis of rendered images.')
-   
-    parser.add_argument('-r',   '--ref',       help='reference image filename', type=str)
-    parser.add_argument('-t',   '--tests',     help='test images filename', nargs='+', type=str)
-    parser.add_argument('-n',   '--names',     help='algorithms names', nargs='+', type=str)
-    parser.add_argument('-m',   '--metrics',   help='difference metrics', nargs='+', choices=['l1', 'l2', 'mrse', 'mape', 'smape', 'dssim'], type=str, required=True)
-    parser.add_argument('-np',  '--negpos',    help='shows negative/positive SMAPE', action='store_true')
-    parser.add_argument('-p',   '--partials',  help='partial renders to track convergence', nargs='+', type=str)
-    parser.add_argument('-eps', '--epsilon',   help='epsilon value', type=float, default=1e-2)
-    parser.add_argument('-c',   '--clip',      help='clipping values for min/max', nargs=2, type=float, default=[0,1])
-    parser.add_argument('-d',   '--dir',       help='corresponding viewer scene directory', type=str, required=True)
-    parser.add_argument('-A',   '--automatic', help='scene directory for automatic mode', type=str)
+    parser = argparse.ArgumentParser(
+        description='Batch analysis of rendered images.')
+
+    parser.add_argument('-r',   '--ref',
+                        help='reference image filename', type=str)
+    parser.add_argument('-t',   '--tests',
+                        help='test images filename', nargs='+', type=str)
+    parser.add_argument('-n',   '--names',
+                        help='algorithms names', nargs='+', type=str)
+    parser.add_argument('-m',   '--metrics',   help='difference metrics', nargs='+',
+                        choices=['l1', 'l2', 'mrse', 'mape', 'smape', 'dssim'], type=str, required=True)
+    parser.add_argument('-np',  '--negpos',
+                        help='shows negative/positive SMAPE', action='store_true')
+    parser.add_argument('-p',   '--partials',
+                        help='partial renders to track convergence', nargs='+', type=str)
+    parser.add_argument('-eps', '--epsilon',
+                        help='epsilon value', type=float, default=1e-2)
+    parser.add_argument('-exp', '--exposure',
+                        help='exposure value', type=float, default=0.0)                      
+    parser.add_argument('-c',   '--clip',      help='clipping values for min/max',
+                        nargs=2, type=float, default=[0, 1])
+    parser.add_argument(
+        '-d',   '--dir',       help='corresponding viewer scene directory', type=str, required=True)
+    parser.add_argument('-A',   '--automatic',
+                        help='scene directory for automatic mode', type=str)
 
     args = parser.parse_args()
 
     # In automatic mode, check if conflicts with other arguments
     # Automatic mode can be used to save time during experiments
-    # Proper command arguments needed to be generated 
+    # Proper command arguments needed to be generated
     tests = args.tests
     names = args.names
+    exposure = math.pow(2, args.exposure)
     reference = args.ref
-    partials = args.partials
+    partials = [] if args.partials is None else args.partials
     if (args.automatic):
         # Arguments needs to be empty for automatic mode
         if (tests != None):
-            raise Exception('Tests (--tests) cannot be used with automatic mode (-Aa)')
+            raise Exception(
+                'Tests (--tests) cannot be used with automatic mode (-A)')
         if (names != None):
-            raise Exception('Names (--names) cannot be used with automatic mode (-A)')
-        if (partials != None):
-            raise Exception('Partials (--partials) cannot be used with automatic mode (-A)')
+            raise Exception(
+                'Names (--names) cannot be used with automatic mode (-A)')
+        if (len(partials) != 0):
+            raise Exception(
+                'Partials (--partials) cannot be used with automatic mode (-A)')
         if (reference != None):
-            raise Exception('Reference cannot be provided with automatic mode (-A); default assumes "Reference.exr" in scene directory')
-        
+            raise Exception(
+                'Reference cannot be provided with automatic mode (-A); default assumes "Reference.exr" in scene directory')
+
         # Check the reference
         reference = os.path.join(args.automatic, 'Reference.exr')
         if (not os.path.exists(reference)):
-            raise Exception('Could not load reference image: {}'.format(reference))
+            raise Exception(
+                'Could not load reference image: {}'.format(reference))
 
         # Extract all the techniques names
         tests, names, partials = [], [], []
+        print(os.path.join(args.automatic, '*_partial'))
         for t in glob.glob(os.path.join(args.automatic, '*_partial')):
             name = t.split(os.path.sep)[-1].replace('_partial', '')
             names += [name]
@@ -348,7 +388,8 @@ if __name__ == '__main__':
             glob_expr = os.path.join(t, '{}_[0-9]*.{}'.format(name, ext))
             img = glob.glob(glob_expr)
             if (len(img) == 0):
-                raise Exception('Could not find files matching {}'.format(glob_expr))
+                raise Exception(
+                    'Could not find files matching {}'.format(glob_expr))
             img = max(img, key=os.path.getctime)
 
             print('Using {} to represent {}'.format(img, name))
@@ -356,14 +397,16 @@ if __name__ == '__main__':
     else:
         # Check if everything needed is provided
         if (tests == None):
-            raise Exception('Tests (--tests) is required when not in automatic mode')
+            raise Exception(
+                'Tests (--tests) is required when not in automatic mode')
         if (reference == None):
             raise Exception('Need to provide a reference (using --ref)')
-    
+
     # Clean partial path by removing os.path.sep
     for i in range(len(partials)):
-        partials[i] = partials[i][:-len(os.path.sep)] if partials[i].endswith(os.path.sep) else partials[i]
-    
+        partials[i] = partials[i][:-
+                                  len(os.path.sep)] if partials[i].endswith(os.path.sep) else partials[i]
+
     # Print informations
     print('Arguments info')
     print('- Tests: ')
@@ -372,26 +415,27 @@ if __name__ == '__main__':
     print('- Partials: ')
     for t in partials:
         print('  * {}'.format(t))
-        
+
     # Load images
-    ref = load_hdr_img(reference)
+    ref = load_img(reference) * exposure
     test_configs, test_names = [], []
     for i, t in enumerate(tests):
-        img = load_hdr_img(t)
+        img = load_img(t) * exposure
         if names:
             test_name = names[i]
         else:
-            test_name = os.path.splitext(t)[0].replace('-',' ')
-        
+            test_name = t#os.path.splitext(t)[0].replace('-', ' ')
+
         # For e.g. handling greek symbols
         test_name = test_name.encode('utf8').decode('unicode_escape')
         test_names.append(test_name)
         test_configs.append({'name': test_name, 'data': img})
-    
+
     # Compute stats
     sys.stdout.write('Computing stats... ')
     sys.stdout.flush()
-    data = compute_stats(args.dir, ref, test_configs, args.metrics, args.clip, args.negpos, args.epsilon)
+    data = compute_stats(args.dir, ref, test_configs,
+                         args.metrics, args.clip, args.negpos, args.epsilon)
     if (partials):
         track_convergence(data, ref, partials, args.metrics, args.epsilon)
     write_data(args.dir, data)
