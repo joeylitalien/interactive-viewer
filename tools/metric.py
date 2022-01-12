@@ -17,10 +17,8 @@ COLOR_MAP = 'viridis'
 
 def compute_metric(ref, test, metric, eps=1e-2):
     """Compute desired metric."""
-
     diff = np.array(ref - test)
-    eps = 1e-2
-
+    
     if (metric == 'l1'):      # Absolute error
         error = np.abs(diff)
     elif (metric == 'l2'):    # Squared error
